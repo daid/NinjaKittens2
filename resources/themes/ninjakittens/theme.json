@@ -1,0 +1,216 @@
+{
+    "fonts": {
+        "large": {
+            "size": 1.5,
+            "bold": true,
+            "family": "Roboto"
+        },
+        "default": {
+            "size": 1,
+            "family": "Roboto"
+        },
+        "default_allcaps": {
+            "size": 1,
+            "capitalize": true,
+            "family": "Roboto"
+        },
+        "small": {
+            "size": 0.75,
+            "family": "Roboto"
+        },
+        "tiny": {
+            "size": 0.5,
+            "family": "Roboto"
+        },
+        "caption": {
+            "size": 0.75,
+            "italic": true,
+            "family": "Roboto"
+        },
+        "sidebar_header": {
+            "size": 0.75,
+            "capitalize": true,
+            "family": "Roboto"
+        },
+        "default_header": {
+            "size": 1.0,
+            "bold": true,
+            "family": "Roboto",
+            "letterSpacing": 2.0
+        },
+        "button_tooltip": {
+            "size": 0.75,
+            "capitalize": true,
+            "family": "Roboto"
+        },
+        "setting_category": {
+            "size": 1.0,
+            "family": "Roboto"
+        }
+    },
+
+    "colors": {
+		"text_default": [0, 0, 0, 255],
+        "sidebar": [255, 255, 255, 255],
+        "lining": [208, 210, 211, 255],
+
+        "primary": [12, 169, 227, 255],
+        "primary_hover": [34, 150, 190, 255],
+        "primary_text": [255, 255, 255, 255],
+        "border": [205, 202, 201, 255],
+        "secondary": [205, 202, 201, 255],
+
+        "text": [140, 144, 154, 255],
+        "text_inactive": [174, 174, 174, 255],
+        "text_white": [255, 255, 255, 255],
+        "text_hover": [35, 35, 35, 255],
+        "text_pressed": [12, 169, 227, 255],
+
+        "error": [255, 140, 0, 255],
+        "sidebar_header_bar": [12, 169, 227, 255],
+
+        "button": [139, 143, 153, 255],
+        "button_hover": [77, 184, 226, 255],
+        "button_active": [32, 166, 219, 255],
+        "button_active_hover": [77, 184, 226, 255],
+        "button_text": [255, 255, 255, 255],
+        "button_disabled": [0, 0, 0, 255],
+        "button_tooltip_text": [35, 35, 35, 255],
+
+        "toggle_active": [255, 255, 255, 255],
+        "toggle_active_text": [77, 184, 226, 255],
+        "toggle_disabled": [77, 184, 226, 255],
+        "toggle_disabled_text": [255, 255, 255, 255],
+
+        "load_save_button": [0, 0, 0, 255],
+        "load_save_button_text": [255, 255, 255, 255],
+        "load_save_button_hover": [43, 45, 46, 255],
+        "load_save_button_inactive": [176, 184, 191, 255],
+        "load_save_button_inactive_text": [209, 214, 219, 255],
+
+        "scrollbar_background": [245, 245, 245, 255],
+        "scrollbar_handle": [12, 159, 227, 255],
+        "scrollbar_handle_hover": [174, 174, 174, 255],
+        "scrollbar_handle_down": [12, 159, 227, 255],
+
+        "setting_category": [238, 238, 238, 255],
+        "setting_category_disabled": [238, 238, 238, 255],
+        "setting_category_hover": [231, 231, 231, 255],
+        "setting_category_active": [240, 248, 255, 255],
+        "setting_category_active_hover": [233, 244, 245, 255],
+        "setting_category_text": [35, 35, 35, 255],
+
+        "setting_control": [255, 255, 255, 255],
+        "setting_control_highlight": [245, 245, 245, 255],
+        "setting_control_border": [174, 174, 174, 255],
+        "setting_control_text": [0, 0, 0, 255],
+        "setting_control_depth_line": [162, 192, 227, 255],
+        "setting_control_hover": [139, 143, 153, 255],
+        "setting_control_selected": [35, 35, 35, 255],
+        "setting_control_revert": [85, 85, 85, 255],
+        "setting_unit": [174, 174, 174, 255],
+        "setting_validation_error": [255, 57, 14, 255],
+        "setting_validation_warning": [255, 186, 15, 255],
+        "setting_validation_ok": [255, 255, 255, 255],
+
+        "progressbar_background": [208, 210, 211, 255],
+        "progressbar_control": [12, 169, 227, 255],
+
+        "slider_groove": [245, 245, 245, 255],
+        "slider_groove_border": [139, 143, 153, 255],
+        "slider_groove_fill": [139, 143, 153, 255],
+        "slider_handle": [32, 166, 219, 255],
+        "slider_handle_hover": [77, 182, 226, 255],
+        "slider_text_background": [255, 255, 255, 255],
+
+        "checkbox": [255, 255, 255, 255],
+        "checkbox_hover": [245, 245, 245, 255],
+        "checkbox_border": [174, 174, 174, 255],
+        "checkbox_mark": [35, 35, 35, 255],
+        "checkbox_text": [0, 0, 0, 255],
+
+        "tooltip": [255, 225, 146, 255],
+
+        "message_background": [255, 255, 255, 255],
+        "message_text": [32, 166, 219, 255],
+        "message_dismiss": [139, 143, 153, 255],
+
+        "tool_panel_background": [255, 255, 255, 255],
+
+        "per_object_settings_panel_background": [255, 255, 255, 255],
+        "per_object_settings_panel_border": [208, 210, 211, 255]
+    },
+
+    "sizes": {
+        "window_margin": [1.5, 1.5],
+        "default_margin": [1.0, 1.0],
+        "default_lining": [0.1, 0.1],
+        "logo": [16.5, 1.5],
+
+        "sidebar": [26.0, 10.0],
+        "sidebar_header": [0.0, 3.8],
+        "sidebar_header_mode_toggle": [0.0, 2.4],
+        "sidebar_setup": [0.0, 2.6],
+        "sidebar_subParts": [0.0, 2.4],
+        "sidebar_specs_bar": [0.0, 2.2],
+        "sidebar_inputFields": [0.0, 1.9],
+        "simple_mode_infill_caption": [0.0, 5.0],
+        "simple_mode_infill_height": [0.0, 8.0],
+
+        "section": [0.0, 2.0],
+        "section_icon": [1.6, 1.6],
+        "section_icon_column": [2.8, 0.0],
+
+        "setting": [21.0, 1.8],
+        "setting_control": [7.0, 2.0],
+        "setting_control_depth_margin": [1.4, 0.0],
+        "setting_preferences_button_margin": [3.3, 0.0],
+        "setting_control_margin": [0.0, 0.0],
+        "setting_unit_margin": [0.5, 0.5],
+        "setting_text_maxwidth": [40.0, 0.0],
+
+        "standard_list_lineheight": [1.5, 1.5],
+        "standard_list_input": [20.0, 25.0],
+        "standard_arrow": [0.6, 0.6],
+
+        "button": [3.8, 3.8],
+        "button_icon": [2.6, 2.6],
+
+        "progressbar": [26.0, 0.8],
+        "progressbar_control": [8.0, 0.8],
+        "progressbar_padding": [0.0, 1.0],
+
+        "scrollbar": [0.7, 0.5],
+
+        "slider_groove": [0.5, 0.5],
+        "slider_handle": [1.5, 1.5],
+        "slider_layerview_background": [4.0, 0.0],
+        "slider_layerview_smalltext_margin": [0.3, 0.00],
+        "slider_layerview_background_extension": [0.0, 2.2],
+        "slider_layerview_margin": [3.0, 3.0],
+
+        "checkbox": [1.5, 1.5],
+
+        "tooltip": [20.0, 10.0],
+        "tooltip_margins": [1.0, 1.0],
+
+        "save_button_border": [0.06, 0.06],
+        "save_button_header": [0.0, 3.2],
+        "save_button_text_margin": [0.3, 0.6],
+        "save_button_slicing_bar": [0.0, 2.2],
+        "save_button_label_margin": [0.5, 0.5],
+        "save_button_save_to_button": [0.3, 2.7],
+        "save_button_specs_icons": [1.4, 1.4],
+
+        "modal_window_minimum": [30.0, 30.0],
+        "wizard_progress": [10.0, 0.0],
+
+        "message": [30.0, 5.0],
+        "message_close": [1.25, 1.25],
+        "message_button": [6.0, 1.8],
+
+        "per_object_settings_button": [2.0, 2.0],
+        "per_object_settings_panel": [24.0, 10.0],
+        "per_object_settings_panel_border": [0.1, 0.1]
+    }
+}
