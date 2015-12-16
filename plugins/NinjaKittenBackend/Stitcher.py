@@ -3,8 +3,10 @@ from UM.Logger import Logger
 from . import PointUtil
 from . import Paths
 
+
 def _hash(point):
     return (point[0] // 10) ^ ((point[1] // 10) << 32)
+
 
 def _hashes(point):
     yield _hash((point[0] - 10, point[1]))

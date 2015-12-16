@@ -39,7 +39,8 @@ class NinjaJob(Job):
         Logger.log("i", "ClosedPaths: %s", len(paths.closed_paths))
 
         paths = paths.processEvenOdd()
-        paths = paths.offset(self._profile.getSettingValue("tool_diameter"))
+        tool_diameter = self._profile.getSettingValue("tool_diameter")
+        paths = paths.offset(tool_diameter / 2.0)
 
         self.buildResultNode(paths)
 
