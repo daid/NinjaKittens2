@@ -3,12 +3,11 @@ from UM.Scene.Iterator.DepthFirstIterator import DepthFirstIterator
 from UM.Scene.Scene import SceneNode
 from UM.Logger import Logger
 from UM.Job import Job
-from UM.Mesh.MeshData import MeshData
 
-from . import Paths
 from . import Slicer
 from . import Stitcher
 from . import PathResultDecorator
+from . import OrderOptimizer
 
 
 class NinjaJob(Job):
@@ -42,26 +41,14 @@ class NinjaJob(Job):
         tool_diameter = self._profile.getSettingValue("tool_diameter")
         paths = paths.offset(tool_diameter / 2.0)
 
+        order = OrderOptimizer.OrderOptimizer(paths)
+        paths = order.getResults()
+
         self.buildResultNode(paths)
 
     def buildResultNode(self, paths):
-        mesh = MeshData()
-        for path in paths.closed_paths:
-            mesh.addVertex(path[0][0] / Paths.SCALE, 2, path[0][1] / Paths.SCALE)
-            for point in path[1:]:
-                mesh.addVertex(point[0] / Paths.SCALE, 2, point[1] / Paths.SCALE)
-                mesh.addVertex(point[0] / Paths.SCALE, 2, point[1] / Paths.SCALE)
-            mesh.addVertex(path[0][0] / Paths.SCALE, 2, path[0][1] / Paths.SCALE)
-        for path in paths.open_paths:
-            mesh.addVertex(path[0][0] / Paths.SCALE, 2, path[0][1] / Paths.SCALE)
-            for point in path[1:-2]:
-                mesh.addVertex(point[0] / Paths.SCALE, 2, point[1] / Paths.SCALE)
-                mesh.addVertex(point[0] / Paths.SCALE, 2, point[1] / Paths.SCALE)
-            mesh.addVertex(path[-1][0] / Paths.SCALE, 2, path[-1][1] / Paths.SCALE)
-
         new_node = SceneNode()
         decorator = PathResultDecorator.PathResultDecorator()
-        decorator.setPaths(paths)
         new_node.addDecorator(decorator)
-        new_node.setMeshData(mesh)
+        decorator.setPaths(paths)
         new_node.setParent(self._scene.getRoot())

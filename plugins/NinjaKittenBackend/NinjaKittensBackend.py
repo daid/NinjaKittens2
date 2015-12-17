@@ -71,7 +71,9 @@ class NinjaKittensBackend(Backend):
 
     def _processScene(self):
         self._change_timer.start()
+        self.processingProgress.emit(0.0)
 
     def _runJob(self):
         job = NinjaJob.NinjaJob()
         job.start()
+        self.processingProgress.emit(1.0)

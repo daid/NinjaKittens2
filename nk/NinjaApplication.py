@@ -72,6 +72,7 @@ class NinjaApplication(QtApplication):
             "STLReader",
             "SelectionTool",
             "CameraTool",
+            "TrotecWriter",
             "LocalFileOutputDevice"
         ])
         self._volume = None
