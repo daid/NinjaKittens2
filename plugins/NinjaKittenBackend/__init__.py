@@ -11,7 +11,7 @@ def getMetaData():
     return {
         "plugin": {
             "name": catalog.i18nc("@label", "NinjaKittens Backend"),
-            "author": "Ultimaker",
+            "author": "Daid",
             "description": catalog.i18nc("@info:whatsthis", "Provides the NinjaKittens backend"),
             "api": 2
         }

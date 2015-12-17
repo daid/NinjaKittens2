@@ -1,16 +1,14 @@
-# Copyright (c) 2015 Ultimaker B.V.
-# Cura is released under the terms of the AGPLv3 or higher.
+import base64
+import zlib
+import os
 
 from UM.Scene.Iterator.DepthFirstIterator import DepthFirstIterator
 from UM.Mesh.MeshWriter import MeshWriter
 from UM.Logger import Logger
 from UM.Application import Application
 
-import base64
-import zlib
-
 class TrotecFileWriter(MeshWriter):
-    def __init__(self):
+    def __init__(self, filename):
         super().__init__()
         self._bmp_magic = b"""eJztyTEKwkAURdFvJzbBHVimTG3CIAMpg4UuwiaQFWTlwjgDVu5AOOdxqzc9nnndrpdhHFJe9tc5
 mlTra3sX8T5GHOqa2/f/VUppAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -38,6 +36,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCHpvme1y2dPr1q6Hs="""
         self._max_x = None
         self._min_y = None
         self._min_x = None
+        self._filename = filename
 
     def write(self, stream, node, mode=MeshWriter.OutputMode.BinaryMode):
         if mode != MeshWriter.OutputMode.BinaryMode:
@@ -72,7 +71,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCHpvme1y2dPr1q6Hs="""
         stream.write(('<Size: %.2f;%.2f>\r\n' % (max_x - min_x + 1.0, max_y - min_y + 1.0)).encode('utf-8'))
         stream.write(b'<MaterialGroup: Rubber>\r\n')
         stream.write(b'<MaterialName: 2.3 mm>\r\n')
-        stream.write(('<JobName: %s.eps>\r\n' % ("filename")).encode('utf-8'))
+        stream.write(('<JobName: %s>\r\n' % (os.path.basename(self._filename))).encode('utf-8'))
         stream.write(b'<JobNumber: 1>\r\n')
         stream.write(('<Resolution: %i>\r\n' % (self._dpi)).encode('utf-8'))
         stream.write(b'<Cutline: none>\r\n')

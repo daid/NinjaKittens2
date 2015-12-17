@@ -1,5 +1,5 @@
-from . import Paths
-from . import PointUtil
+from nk import Paths
+from nk import PointUtil
 
 
 class OrderOptimizer:
@@ -15,7 +15,7 @@ class OrderOptimizer:
 
             for n in order:
                 self._result.closed_paths.append(paths.closed_paths[n])
-            self._result.open_paths.append(paths.open_paths[n])
+            self._result.open_paths += paths.open_paths
 
     def _centerPoints(self, paths):
         center_points = []

@@ -1,7 +1,7 @@
 from UM.Logger import Logger
 
-from . import PointUtil
-from . import Paths
+from nk import PointUtil
+from nk import Paths
 
 
 def _hash(point):

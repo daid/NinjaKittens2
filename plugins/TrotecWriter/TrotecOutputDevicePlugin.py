@@ -50,7 +50,7 @@ class TrotecFileOutputDevice(OutputDevice):
 
         self._writing = False
 
-    def requestWrite(self, node, file_name = None):
+    def requestWrite(self, node, file_name=None):
         if self._writing:
             raise OutputDeviceError.DeviceBusyError()
 
@@ -111,7 +111,7 @@ class TrotecFileOutputDevice(OutputDevice):
                 raise OutputDeviceError.UserCanceledError()
 
         self.writeStarted.emit(self)
-        mesh_writer = TrotecFileWriter.TrotecFileWriter()
+        mesh_writer = TrotecFileWriter.TrotecFileWriter(file_name)
         try:
             mode = selected_type["mode"]
             if mode == MeshWriter.OutputMode.TextMode:

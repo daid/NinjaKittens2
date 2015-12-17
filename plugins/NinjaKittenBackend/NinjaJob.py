@@ -4,9 +4,10 @@ from UM.Scene.Scene import SceneNode
 from UM.Logger import Logger
 from UM.Job import Job
 
+from nk import PathResultDecorator
+
 from . import Slicer
 from . import Stitcher
-from . import PathResultDecorator
 from . import OrderOptimizer
 
 

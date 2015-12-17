@@ -4,15 +4,11 @@
 from UM.View.View import View
 from UM.Scene.Iterator.DepthFirstIterator import DepthFirstIterator
 from UM.Resources import Resources
-from UM.Application import Application
-from UM.Math.Color import Color
-from UM.Preferences import Preferences
-from UM.View.Renderer import Renderer
 from UM.View.RenderBatch import RenderBatch
 
 from UM.View.GL.OpenGL import OpenGL
 
-import math
+from nk import PathResultDecorator
 
 
 ## Standard view for mesh models. 
@@ -32,7 +28,7 @@ class SolidView(View):
         for node in DepthFirstIterator(scene.getRoot()):
             if not node.render(renderer):
                 if node.getMeshData() and node.isVisible():
-                    if node.hasDecoration("getPaths"):
+                    if node.getDecorator(PathResultDecorator.PathResultDecorator):
                         renderer.queueNode(node, shader=self._shader, mode=RenderBatch.RenderMode.Lines)
                     else:
                         renderer.queueNode(node, shader=self._shader)
