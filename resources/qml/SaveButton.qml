@@ -25,9 +25,6 @@ Rectangle {
 
     UM.I18nCatalog { id: catalog; name:"nk"}
 
-    property variant printDuration: PrintInformation.currentPrintTime;
-    property real printMaterialAmount: PrintInformation.materialAmount;
-
     function createFileName(){
         var splitMachineName = UM.MachineManager.activeMachineInstance.split(" ")
         var abbrMachine = ''

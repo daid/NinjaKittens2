@@ -267,8 +267,6 @@ UM.MainWindow
                 title: catalog.i18nc("@title:menu","&Help");
 
                 MenuItem { action: actions.showEngineLog; }
-                MenuItem { action: actions.documentation; }
-                MenuItem { action: actions.reportBug; }
                 MenuSeparator { }
                 MenuItem { action: actions.about; }
             }
@@ -558,8 +556,6 @@ UM.MainWindow
         preferences.onTriggered: { preferences.visible = true; preferences.setPage(0); }
         manageProfiles.onTriggered: { preferences.visible = true; preferences.setPage(4); }
 
-        documentation.onTriggered: CuraActions.openDocumentation();
-        reportBug.onTriggered: CuraActions.openBugReportPage();
         showEngineLog.onTriggered: engineLog.visible = true;
         about.onTriggered: aboutDialog.visible = true;
         toggleFullScreen.onTriggered: base.toggleFullscreen()

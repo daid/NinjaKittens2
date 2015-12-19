@@ -12,7 +12,7 @@ UM.Dialog
     id: base
 
     //: About dialog title
-    title: catalog.i18nc("@title:window","About Cura")
+    title: catalog.i18nc("@title:window","About NinjaKittens")
     minimumWidth: 400
     minimumHeight: 300;
     //UM.I18nCatalog { id: catalog; }
@@ -37,7 +37,7 @@ UM.Dialog
     {
         id: version
 
-        text: "Cura %1".arg(UM.Application.version)
+        text: "NinjaKittens %1".arg(UM.Application.version)
         font: UM.Theme.fonts.large
         anchors.horizontalCenter : logo.horizontalCenter
         anchors.horizontalCenterOffset : (logo.width * 0.25)
@@ -51,7 +51,7 @@ UM.Dialog
         width: parent.width
 
         //: About dialog application description
-        text: catalog.i18nc("@label","End-to-end solution for fused filament 3D printing.")
+        text: catalog.i18nc("@label","We have cookies.")
         wrapMode: Text.WordWrap
         anchors.top: version.bottom
         anchors.topMargin : 10
@@ -63,7 +63,7 @@ UM.Dialog
         width: parent.width
 
         //: About dialog application author note
-        text: catalog.i18nc("@info:credit","Cura has been developed by Ultimaker B.V. in cooperation with the community.")
+        text: catalog.i18nc("@info:credit","NinjaKittens has been developed by cats, and catlike creatures.")
         wrapMode: Text.WordWrap
         anchors.top: description.bottom
     }

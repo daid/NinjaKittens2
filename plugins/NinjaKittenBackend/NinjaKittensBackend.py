@@ -8,6 +8,8 @@ from UM.i18n import i18nCatalog
 
 from PyQt5.QtCore import QTimer
 
+from nk import PathResultDecorator
+
 from . import NinjaJob
 
 catalog = i18nCatalog("nk")
@@ -41,7 +43,7 @@ class NinjaKittensBackend(Backend):
         if source.getMeshData() is None:
             return
 
-        if source.hasDecoration("getPaths"):
+        if source.getDecorator(PathResultDecorator.PathResultDecorator):
             return
 
         self._processScene()

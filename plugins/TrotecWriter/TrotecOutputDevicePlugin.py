@@ -19,6 +19,8 @@ from UM.OutputDevice.OutputDevice import OutputDevice
 from UM.OutputDevice import OutputDeviceError
 from UM.Message import Message
 
+from nk import PathResultDecorator
+
 from . import TrotecFileWriter
 
 from UM.i18n import i18nCatalog
@@ -33,7 +35,13 @@ class TrotecFileOutputDevicePlugin(OutputDevicePlugin):
         Preferences.getInstance().addPreference("local_file/dialog_state", "")
 
     def start(self):
-        self.getOutputDeviceManager().addOutputDevice(TrotecFileOutputDevice())
+        Application.getInstance().getController().getScene().sceneChanged.connect(self._onSceneChanged)
+
+    def _onSceneChanged(self, node):
+        if node.getDecorator(PathResultDecorator.PathResultDecorator):
+            if not self.getOutputDeviceManager().getOutputDevice("trotec_file"):
+                self.getOutputDeviceManager().addOutputDevice(TrotecFileOutputDevice())
+                self.getOutputDeviceManager().removeOutputDevice("local_file")
 
     def stop(self):
         self.getOutputDeviceManager().removeOutputDevice("trotec_file")

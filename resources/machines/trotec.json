@@ -10,8 +10,11 @@
 
     "machine_settings": {
         "machine_width": { "default": 726 },
-        "machine_height": { "default": 198 },
+        "machine_height": { "default": 20 },
         "machine_depth": { "default": 432 },
         "machine_center_is_zero": { "default": false }
+    },
+    "overrides": {
+      "tool_diameter": { "default": 0.1 }
     }
 }

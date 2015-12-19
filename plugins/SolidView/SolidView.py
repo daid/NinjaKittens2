@@ -29,7 +29,7 @@ class SolidView(View):
             if not node.render(renderer):
                 if node.getMeshData() and node.isVisible():
                     if node.getDecorator(PathResultDecorator.PathResultDecorator):
-                        renderer.queueNode(node, shader=self._shader, mode=RenderBatch.RenderMode.Lines)
+                        renderer.queueNode(node, mode=RenderBatch.RenderMode.Lines, overlay=True)
                     else:
                         renderer.queueNode(node, shader=self._shader)
                 if node.callDecoration("isGroup"):

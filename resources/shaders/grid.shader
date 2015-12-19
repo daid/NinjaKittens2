@@ -21,7 +21,7 @@ fragment =
 
     void main()
     {
-        if (mod(floor(v_uvs.x / 10.0) - floor(v_uvs.y / 10.0), 2.0) < 1.0)
+        if (mod(floor(v_uvs.x / 100.0) - floor(v_uvs.y / 100.0), 2.0) < 1.0)
             gl_FragColor = u_gridColor0;
         else
             gl_FragColor = u_gridColor1;

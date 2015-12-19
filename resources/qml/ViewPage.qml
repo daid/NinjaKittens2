@@ -25,24 +25,6 @@ UM.PreferencesPage
     {
         UM.I18nCatalog { id: catalog; name:"nk"}
 
-        UM.TooltipArea
-        {
-            width: childrenRect.width;
-            height: childrenRect.height;
-
-            text: catalog.i18nc("@info:tooltip","Highlight unsupported areas of the model in red. Without support these areas will nog print properly.")
-
-            CheckBox
-            {
-                id: overhangCheckbox
-
-                checked: boolCheck(UM.Preferences.getValue("view/show_overhang"))
-                onClicked: UM.Preferences.setValue("view/show_overhang",  checked)
-
-                text: catalog.i18nc("@option:check","Display Overhang");
-            }
-        }
-
         UM.TooltipArea {
             width: childrenRect.width;
             height: childrenRect.height;
@@ -61,7 +43,6 @@ UM.PreferencesPage
             target: UM.Preferences
             onPreferenceChanged:
             {
-                overhangCheckbox.checked = boolCheck(UM.Preferences.getValue("view/show_overhang"))
                 centerCheckbox.checked = boolCheck(UM.Preferences.getValue("view/center_on_select"))
             }
         }

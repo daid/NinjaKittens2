@@ -84,7 +84,6 @@ Rectangle
         {
             if(item)
             {
-                item.configureSettings = base.configureMachinesAction;
                 if(item.onShowTooltip != undefined)
                 {
                     item.showTooltip.connect(base.showTooltip)

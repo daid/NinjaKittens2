@@ -33,8 +33,6 @@ Item
     property alias preferences: preferencesAction;
 
     property alias showEngineLog: showEngineLogAction;
-    property alias documentation: documentationAction;
-    property alias reportBug: reportBugAction;
     property alias about: aboutAction;
 
     property alias toggleFullScreen: toggleFullScreenAction;
@@ -84,20 +82,6 @@ Item
         id: manageProfilesAction;
         text: catalog.i18nc("@action:inmenu","Manage Profiles...");
         iconName: "configure";
-    }
-
-    Action
-    {
-        id: documentationAction;
-        text: catalog.i18nc("@action:inmenu","Show Online &Documentation");
-        iconName: "help-contents";
-        shortcut: StandardKey.Help;
-    }
-
-    Action {
-        id: reportBugAction;
-        text: catalog.i18nc("@action:inmenu","Report a &Bug");
-        iconName: "tools-report-bug";
     }
 
     Action

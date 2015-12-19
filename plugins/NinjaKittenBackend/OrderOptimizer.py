@@ -17,6 +17,8 @@ class OrderOptimizer:
                 self._result.closed_paths.append(paths.closed_paths[n])
             self._result.open_paths += paths.open_paths
 
+        self._orderStartPoints()
+
     def _centerPoints(self, paths):
         center_points = []
         for poly in paths.closed_paths:
@@ -35,8 +37,8 @@ class OrderOptimizer:
                 start = n
         if start is None:
             return []
-        done[n] = True
-        result = [n]
+        done[start] = True
+        result = [start]
         while len(result) < len(center_points):
             best_distance = None
             best = None
@@ -45,7 +47,7 @@ class OrderOptimizer:
                     continue
                 distance = PointUtil.lengthSquared(PointUtil.sub(center_points[start], center_points[n]))
                 if best_distance is None or best_distance > distance:
-                    best_distance = PointUtil.lengthSquared(PointUtil.sub(center_points[start], center_points[n]))
+                    best_distance = distance
                     best = n
             done[best] = True
             result.append(best)
@@ -72,6 +74,26 @@ class OrderOptimizer:
         else:
             for node in nodes:
                 self._getPathsAtDepthRecursive(target_depth, result_path, node.childs, depth + 1)
+
+    def _orderStartPoints(self):
+        if len(self._result.closed_paths) > 1:
+            start = self._result.closed_paths[0][0]
+            for n in range(1, len(self._result.closed_paths)):
+                best = self._findClosestIndexTo(start, self._result.closed_paths[n])
+                self._result.closed_paths[n] = self._result.closed_paths[n][best:] + self._result.closed_paths[n][:best]
+                start = self._result.closed_paths[n][0]
+            best = self._findClosestIndexTo(self._result.closed_paths[1][0], self._result.closed_paths[0])
+            self._result.closed_paths[0] = self._result.closed_paths[0][best:] + self._result.closed_paths[0][:best]
+
+    def _findClosestIndexTo(self, point, path):
+        best = None
+        best_distance = None
+        for m in range(0, len(path)):
+            distance = PointUtil.lengthSquared(PointUtil.sub(point, path[m]))
+            if best_distance is None or best_distance > distance:
+                best_distance = distance
+                best = m
+        return best
 
     def getResults(self):
         return self._result
