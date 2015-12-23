@@ -1,7 +1,7 @@
 import os
-import threading
-import queue
 import imp
+import argparse
+import glob
 
 from UM.Preferences import Preferences
 from UM.Resources import Resources
@@ -43,9 +43,10 @@ class HeadlessApplication(Application):
             manager.setActiveMachineInstance(manager.getMachineInstance(0))
         manager.setActiveProfile(manager.getProfiles()[0])
 
-    def run(self):
-        #self.processFile("C:/??.dxf")
-        pass
+    def run(self, path):
+        for filename in glob.glob(os.path.join(path, "*.dxf")):
+            if not os.path.isfile("%s.tsf" % (filename)) and not os.path.isfile("%s.error.txt" % (filename)):
+                self.processFile(filename)
 
     def processFile(self, filename):
         Logger.log("i", "Loading mesh: %s", filename)
@@ -72,7 +73,13 @@ class HeadlessApplication(Application):
     def functionEvent(self, event):
         pass #ignore all events, we are running synchronized
 
+    def parseCommandLine(self):
+        pass
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('path')
+
+    args = parser.parse_args()
     app = HeadlessApplication.getInstance()
-    app.run()
+    app.run(args.path)
