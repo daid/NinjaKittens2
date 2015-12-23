@@ -119,7 +119,7 @@ class TrotecFileOutputDevice(OutputDevice):
                 raise OutputDeviceError.UserCanceledError()
 
         self.writeStarted.emit(self)
-        mesh_writer = self.createWriter(file_name)
+        mesh_writer = TrotecFileWriter.TrotecFileWriter(file_name)
         try:
             mode = selected_type["mode"]
             if mode == MeshWriter.OutputMode.TextMode:

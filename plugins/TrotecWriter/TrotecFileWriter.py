@@ -83,8 +83,8 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCHpvme1y2dPr1q6Hs="""
         stream.write(b'<EndGroup: Bitmap>\r\n')
         stream.write(b'<BegGroup: DrawCommands>\r\n')
 
-        self._outputPaths(stream, engrave_paths, 0, 0, 255)
-        self._outputPaths(stream, cut_paths, 255, 0, 0)
+        self._outputPaths(stream, engrave_paths, 255, 0, 0)
+        self._outputPaths(stream, cut_paths, 0, 0, 255)
 
         stream.write(b'<EndGroup: DrawCommands>\r\n')
 

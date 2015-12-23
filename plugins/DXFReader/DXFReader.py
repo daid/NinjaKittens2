@@ -130,7 +130,15 @@ class DXFReader(MeshReader):
                     nurbs.addKnot(float(obj.get(40, n)))
                 for n in range(0, obj.count(10)):
                     nurbs.addPoint(float(obj.get(10, n)), float(obj.get(20, n)))
-                points = nurbs.calculate(10)
+                points = nurbs.calculate(2)
+                distance = math.sqrt((points[0][0] - points[-1][0]) * (points[0][0] - points[-1][0]) + (points[0][1] - points[-1][1]) * (points[0][1] - points[-1][1]))
+                if distance < 1.0:
+                    point_count = int(max(2, distance / 0.1))
+                elif distance < 5.0:
+                    point_count = int(max(2, distance / 0.3))
+                else:
+                    point_count = int(max(2, distance / 0.5))
+                points = nurbs.calculate(point_count)
                 for n in range(0, len(points) - 1):
                     self._addLine(points[n][0], points[n][1], points[n + 1][0], points[n + 1][1])
             else:
