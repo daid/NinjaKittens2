@@ -23,6 +23,9 @@ TrotecFileWriter = loadPlugin("TrotecWriter").TrotecFileWriter
 
 class HeadlessApplication(Application):
     def __init__(self):
+        self._output_file_format = "Ts300_%s.tsf"
+        self._output_error_format = "%s.error.txt"
+
         # Hack to prevent Uranium to create config directories
         Resources.getStoragePathForType = lambda type: "NO_PATH"
         # Search in our own path for plugins and stuff
@@ -45,7 +48,7 @@ class HeadlessApplication(Application):
 
     def run(self, path):
         for filename in glob.glob(os.path.join(path, "*.dxf")):
-            if not os.path.isfile("%s.tsf" % (filename)) and not os.path.isfile("%s.error.txt" % (filename)):
+            if not os.path.isfile(self._output_file_format % (filename)) and not os.path.isfile(self._output_error_format % (filename)):
                 self.processFile(filename)
 
     def processFile(self, filename):
@@ -58,13 +61,13 @@ class HeadlessApplication(Application):
 
         if job.getResult() is not None:
             Logger.log("i", "Going to write output")
-            output_filename = "%s.tsf" % (filename)
+            output_filename = self._output_file_format % (filename)
             stream = open(output_filename, "wb")
             writer = TrotecFileWriter.TrotecFileWriter(output_filename)
             writer.write(stream, job.getResult())
             stream.close()
         else:
-            output_filename = "%s.error.txt" % (filename)
+            output_filename = self._output_error_format % (filename)
             stream = open(output_filename, "wt")
             stream.write(job.getError())
             stream.close()
