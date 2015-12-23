@@ -44,8 +44,8 @@ class HeadlessApplication(Application):
         manager.setActiveProfile(manager.getProfiles()[0])
 
     def run(self):
-        self.processFile("C:/Users/d.braam/Documents/Hitler/Signs.dxf")
-        self.processFile("C:/Users/d.braam/Documents/Hitler/SignLeg.dxf")
+        #self.processFile("C:/??.dxf")
+        pass
 
     def processFile(self, filename):
         Logger.log("i", "Loading mesh: %s", filename)
