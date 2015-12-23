@@ -1,3 +1,6 @@
+import time
+import math
+
 from UM.Logger import Logger
 
 from nk import Paths
@@ -13,10 +16,10 @@ def _hashes(point):
     yield _hash(point)
     yield _hash((point[0] + 1000, point[1]))
     yield _hash((point[0] - 1000, point[1] - 1000))
-    yield _hash((point[0], point[1] - 10))
+    yield _hash((point[0], point[1] - 1000))
     yield _hash((point[0] + 1000, point[1] - 1000))
     yield _hash((point[0] - 1000, point[1] + 1000))
-    yield _hash((point[0], point[1] + 10))
+    yield _hash((point[0], point[1] + 1000))
     yield _hash((point[0] + 1000, point[1] + 1000))
     raise StopIteration()
 
@@ -78,6 +81,8 @@ class OrderOptimizer:
     def _calculateOpenOrder(self, paths):
         quick_finds = 0
         slow_finds = 0
+        slow_time = 0.0
+        Logger.log("i", "Line order optimizer, start")
 
         hash_map = {}
         for n in range(0, len(paths)):
@@ -90,14 +95,14 @@ class OrderOptimizer:
                 hash_map[h] = []
             hash_map[h].append(n)
 
-        done = [False] * len(paths)
+        todo = set(range(0, len(paths)))
         start = None
         for n in range(0, len(paths)):
             if start is None or paths[start][0][0] > paths[n][0][0]:
                 start = n
         if start is None:
             return []
-        done[start] = True
+        todo.remove(start)
         result = [start]
         while len(result) < len(paths):
             best_distance = None
@@ -105,7 +110,7 @@ class OrderOptimizer:
             for h in _hashes(paths[start][0]):
                 if h in hash_map:
                     for n in hash_map[h]:
-                        if done[n]:
+                        if n not in todo:
                             continue
                         distance = min(
                             PointUtil.lengthSquared(PointUtil.sub(paths[start][0], paths[n][0])),
@@ -119,7 +124,7 @@ class OrderOptimizer:
             for h in _hashes(paths[start][-1]):
                 if h in hash_map:
                     for n in hash_map[h]:
-                        if done[n]:
+                        if n not in todo:
                             continue
                         distance = min(
                             PointUtil.lengthSquared(PointUtil.sub(paths[start][0], paths[n][0])),
@@ -132,9 +137,8 @@ class OrderOptimizer:
                             best = n
             if best is None:
                 slow_finds += 1
-                for n in range(0, len(paths)):
-                    if done[n]:
-                        continue
+                t = time.time()
+                for n in todo:
                     distance = min(
                         PointUtil.lengthSquared(PointUtil.sub(paths[start][0], paths[n][0])),
                         PointUtil.lengthSquared(PointUtil.sub(paths[start][0], paths[n][-1])),
@@ -144,12 +148,13 @@ class OrderOptimizer:
                     if best_distance is None or best_distance > distance:
                         best_distance = distance
                         best = n
+                slow_time += time.time() - t
             else:
                 quick_finds += 1
-            done[best] = True
+            todo.remove(best)
             result.append(best)
             start = best
-        Logger.log("i", "Line order optimizer, quick: %d, slow: %d", quick_finds, slow_finds)
+        Logger.log("i", "Line order optimizer, quick: %d, slow: %d (%f)", quick_finds, slow_finds, slow_time)
         return result
 
     def _calculateTreeDepth(self, nodes=None, depth=0):
