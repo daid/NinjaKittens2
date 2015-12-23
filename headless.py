@@ -47,11 +47,14 @@ class HeadlessApplication(Application):
             manager.setActiveMachineInstance(manager.getMachineInstance(0))
         manager.setActiveProfile(manager.getProfiles()[0])
 
+    def formatFilename(self, format, filename):
+        return os.path.join(os.path.dirname(filename), format % os.path.basename(filename))
+
     def run(self, path):
         if os.path.isdir(path):
             while True:
                 for filename in glob.glob(os.path.join(path, "*.dxf")):
-                    if not os.path.isfile(self._output_file_format % (filename)) and not os.path.isfile(self._output_error_format % (filename)):
+                    if not os.path.isfile(self.formatFilename(self._output_file_format, filename)) and not os.path.isfile(self.formatFilename(self._output_error_format, filename)):
                         self.processFile(filename)
                 time.sleep(15)
 
@@ -65,13 +68,13 @@ class HeadlessApplication(Application):
 
         if job.getResult() is not None:
             Logger.log("i", "Going to write output")
-            output_filename = self._output_file_format % (filename)
+            output_filename = self.formatFilename(self._output_file_format, filename)
             stream = open(output_filename, "wb")
             writer = TrotecFileWriter.TrotecFileWriter(output_filename)
             writer.write(stream, job.getResult())
             stream.close()
         else:
-            output_filename = self._output_error_format % (filename)
+            output_filename = self.formatFilename(self._output_error_format, filename)
             stream = open(output_filename, "wt")
             stream.write(job.getError())
             stream.close()
