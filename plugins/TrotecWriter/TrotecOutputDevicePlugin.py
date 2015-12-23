@@ -95,10 +95,10 @@ class TrotecFileOutputDevice(OutputDevice):
                 file_name += "." + item["extension"]
 
         dialog.setNameFilters(filters)
-        if selected_filter != None:
+        if selected_filter is not None:
             dialog.selectNameFilter(selected_filter)
 
-        if file_name != None:
+        if file_name is not None:
             dialog.selectFile(file_name)
 
         dialog.restoreState(Preferences.getInstance().getValue("local_file/dialog_state").encode())
@@ -119,7 +119,7 @@ class TrotecFileOutputDevice(OutputDevice):
                 raise OutputDeviceError.UserCanceledError()
 
         self.writeStarted.emit(self)
-        mesh_writer = TrotecFileWriter.TrotecFileWriter(file_name)
+        mesh_writer = self.createWriter(file_name)
         try:
             mode = selected_type["mode"]
             if mode == MeshWriter.OutputMode.TextMode:

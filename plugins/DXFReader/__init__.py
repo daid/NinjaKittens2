@@ -15,10 +15,12 @@ def getMetaData():
             "description": i18n_catalog.i18nc("@info:whatsthis", "Provides support for reading DXF files."),
             "api": 2
         },
-        "mesh_reader": {
-            "extension": "dxf",
-            "description": i18n_catalog.i18nc("@item:inlistbox", "DXF File")
-        }
+        "mesh_reader": [
+            {
+                "extension": "dxf",
+                "description": i18n_catalog.i18nc("@item:inlistbox", "DXF File")
+            }
+        ]
     }
 
 def register(app):

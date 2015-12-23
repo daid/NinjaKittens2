@@ -16,5 +16,10 @@
     },
     "overrides": {
       "tool_diameter": { "default": 0.1 }
+    },
+    "categories": {
+      "speed": {
+        "visible": false
+      }
     }
 }

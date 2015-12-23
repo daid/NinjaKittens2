@@ -139,4 +139,31 @@ class Stitcher:
             for info in hash_lists:
                 if info.point_index == 0:
                     paths.open_paths.append(info.path)
+
+        for distance in [100, 250]:
+            n = 0
+            while n < len(paths.open_paths):
+                m = self._findOpenPathCloseTo(paths.open_paths[n][-1], paths.open_paths, distance)
+                if m is not None and m != n:
+                    paths.open_paths[n] += paths.open_paths[m]
+                    paths.open_paths.pop(m)
+                    if m < n:
+                        n -= 1
+                    continue
+                n += 1
+
+        n = 0
+        while n < len(paths.open_paths):
+            if PointUtil.length(PointUtil.sub(paths.open_paths[n][0], paths.open_paths[n][-1])) < 200:
+                paths.closed_paths.append(paths.open_paths[n])
+                paths.open_paths.pop(n)
+                continue
+            n += 1
+
         return paths
+
+    def _findOpenPathCloseTo(self, point, open_paths, distance):
+        for n in range(0, len(open_paths)):
+            if PointUtil.length(PointUtil.sub(open_paths[n][0], point)) < distance:
+                return n
+        return None

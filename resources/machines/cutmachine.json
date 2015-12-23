@@ -37,6 +37,39 @@
                     "min_value": "0.001",
                     "min_value_warning": "0.01",
                     "max_value_warning": "20.0"
+                },
+                "cut_method": {
+                    "label": "Cutting method",
+                    "type": "enum",
+                    "options": {
+                        "cut_all_outside": "Cut everything",
+                        "cut_all_inside": "Cut everything (internal)",
+                        "cut_outline_engrave_rest": "Cut outline, engrave rest",
+                        "engrave_all": "Engrave all"
+                    },
+                    "default": "cut_all_outside"
+                },
+                "engrave_method": {
+                    "label": "Engrave method",
+                    "type": "enum",
+                    "options": {
+                        "horizontal": "Horizontal lines",
+                        "vertical": "Vertical lines",
+                        "concentric": "Concentric",
+                        "cross": "Cross"
+                    },
+                    "default": "horizontal"
+                },
+                "engrave_line_distance": {
+                    "label": "Engrave distance",
+                    "description": "",
+                    "unit": "mm",
+                    "type": "float",
+                    "default": 1.0,
+                    "min_value": "0.001",
+                    "min_value_warning": "0.01",
+                    "max_value_warning": "20.0",
+                    "inherit_function": "tool_diameter"
                 }
             }
         },

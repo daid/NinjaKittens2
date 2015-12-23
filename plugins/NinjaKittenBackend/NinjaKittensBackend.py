@@ -1,12 +1,13 @@
 # Copyright (c) 2015 Ultimaker B.V.
 # Cura is released under the terms of the AGPLv3 or higher.
 
+import threading
+
+from UM.Logger import Logger
 from UM.Backend.Backend import Backend
 from UM.Application import Application
 from UM.Scene.Scene import SceneNode
 from UM.i18n import i18nCatalog
-
-from PyQt5.QtCore import QTimer
 
 from nk import PathResultDecorator
 
@@ -28,10 +29,7 @@ class NinjaKittensBackend(Backend):
         Application.getInstance().getMachineManager().activeProfileChanged.connect(self._onActiveProfileChanged)
         self._onActiveProfileChanged()
 
-        self._change_timer = QTimer()
-        self._change_timer.setInterval(100)
-        self._change_timer.setSingleShot(True)
-        self._change_timer.timeout.connect(self._runJob)
+        self._change_timer = None
 
     def _onSceneChanged(self, source):
         if type(source) is not SceneNode:
@@ -72,10 +70,22 @@ class NinjaKittensBackend(Backend):
         pass
 
     def _processScene(self):
+        if self._change_timer is not None:
+            self._change_timer.cancel()
+        self._change_timer = threading.Timer(0.5, self._runJob)
         self._change_timer.start()
         self.processingProgress.emit(0.0)
 
     def _runJob(self):
-        job = NinjaJob.NinjaJob()
+        job = NinjaJob.NinjaJob(Application.getInstance().getController().getScene().getRoot(), Application.getInstance().getMachineManager().getActiveProfile())
+        job.progress.connect(self.processingProgress)
+        job.finished.connect(self._onJobFinished)
         job.start()
+
+    def _onJobFinished(self, job):
+        result = job.getResult()
+        if result is not None:
+            result.setParent(self._scene.getRoot())
+        if job.getError() is not None:
+            Logger.log("e", "Error in Ninja job: %s", job.getError())
         self.processingProgress.emit(1.0)
