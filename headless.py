@@ -1,4 +1,5 @@
 import os
+import time
 import imp
 import argparse
 import glob
@@ -47,9 +48,12 @@ class HeadlessApplication(Application):
         manager.setActiveProfile(manager.getProfiles()[0])
 
     def run(self, path):
-        for filename in glob.glob(os.path.join(path, "*.dxf")):
-            if not os.path.isfile(self._output_file_format % (filename)) and not os.path.isfile(self._output_error_format % (filename)):
-                self.processFile(filename)
+        if os.path.isdir(path):
+            while True:
+                for filename in glob.glob(os.path.join(path, "*.dxf")):
+                    if not os.path.isfile(self._output_file_format % (filename)) and not os.path.isfile(self._output_error_format % (filename)):
+                        self.processFile(filename)
+                time.sleep(15)
 
     def processFile(self, filename):
         Logger.log("i", "Loading mesh: %s", filename)
