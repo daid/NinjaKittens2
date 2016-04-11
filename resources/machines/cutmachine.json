@@ -79,7 +79,7 @@
             "icon": "category_speed",
             "settings": {
                 "speed_print": {
-                    "label": "Print Speed",
+                    "label": "Cut Speed",
                     "description": "The speed at which the head moves during cutting.",
                     "unit": "mm/s",
                     "type": "float",
@@ -94,8 +94,7 @@
                     "type": "float",
                     "min_value": "0.1",
                     "max_value_warning": "300",
-                    "default": 120,
-                    "inherit_function": "speed_print if magic_spiralize else 120"
+                    "default": 120
                 }
             }
         }
