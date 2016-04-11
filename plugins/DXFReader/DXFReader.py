@@ -43,7 +43,7 @@ class DXFReader(MeshReader):
             else:
                 Logger.log("e", "DXF: Unexpected object: %s", obj)
 
-        self._mesh.calculateNormals()
+        #self._mesh.calculateNormals()
 
         node = SceneNode()
         node.setMeshData(self._mesh)
