@@ -17,14 +17,12 @@ from . import NURBS
 class DXFReader(MeshReader):
     def __init__(self):
         super(DXFReader, self).__init__()
-        self._supported_extension = ".dxf"
+        self._supported_extensions = [".dxf"]
 
         self._dxf = None
         self._mesh = None
 
     def read(self, file_name):
-        if os.path.splitext(file_name)[1].lower() != self._supported_extension:
-            return None
         self._dxf = DXFObjectReader.DXFObjectReader(open(file_name, "rt"))
         self._mesh = MeshData()
         for obj in self._dxf:

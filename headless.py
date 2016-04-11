@@ -60,7 +60,7 @@ class HeadlessApplication(Application):
 
     def processFile(self, filename):
         Logger.log("i", "Loading mesh: %s", filename)
-        node = self.getMeshFileHandler().read(filename, center=True)
+        node = self.getMeshFileHandler().getReaderForFile(filename).read(filename)
 
         Logger.log("i", "Running job")
         job = NinjaJob.NinjaJob(node, Application.getInstance().getMachineManager().getActiveProfile())
