@@ -62,7 +62,7 @@ class HtmlSvgFileWriter(MeshWriter):
             self._write("<polygon points=\"")
             for point in poly:
                 self._write("%f,%f " % self._convertPoint(point))
-            self._write("\" style=\"fill:none;stroke:$%02x%02x%02x;stroke-width:1\" />\n" % (r, g, b))
+            self._write("\" style=\"fill:none;stroke:#%02x%02x%02x;stroke-width:1\" />\n" % (r, g, b))
 
     def _convertPoint(self, point):
         return ((point[0] / Paths.SCALE) - self._min_x) * self._scale, ((point[1] / Paths.SCALE) - self._min_y) * self._scale

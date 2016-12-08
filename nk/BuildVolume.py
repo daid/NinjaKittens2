@@ -1,22 +1,20 @@
 # Copyright (c) 2015 Ultimaker B.V.
 # Cura is released under the terms of the AGPLv3 or higher.
 
-from UM.View.Renderer import Renderer
+from UM.Scene.Platform import Platform
 from UM.Scene.SceneNode import SceneNode
 from UM.Application import Application
 from UM.Resources import Resources
-from UM.Mesh.MeshData import MeshData
 from UM.Mesh.MeshBuilder import MeshBuilder
 from UM.Math.Vector import Vector
 from UM.Math.Color import Color
 from UM.Math.AxisAlignedBox import AxisAlignedBox
-from UM.Math.Polygon import Polygon
 
 from UM.View.RenderBatch import RenderBatch
 from UM.View.GL.OpenGL import OpenGL
 
-import numpy
 
+##  Build volume is a special kind of node that is responsible for rendering the printable area & disallowed areas.
 class BuildVolume(SceneNode):
     VolumeOutlineColor = Color(12, 169, 227, 255)
 
@@ -36,14 +34,15 @@ class BuildVolume(SceneNode):
         self._disallowed_area_mesh = None
 
         self.setCalculateBoundingBox(False)
+        self._volume_aabb = None
 
-        self._active_profile = None
-        self._active_instance = None
-        Application.getInstance().getMachineManager().activeMachineInstanceChanged.connect(self._onActiveInstanceChanged)
-        self._onActiveInstanceChanged()
+        self._raft_thickness = 0.0
+        self._adhesion_type = None
+        self._platform = Platform(self)
 
-        Application.getInstance().getMachineManager().activeProfileChanged.connect(self._onActiveProfileChanged)
-        self._onActiveProfileChanged()
+        self._global_container_stack = None
+        Application.getInstance().globalContainerStackChanged.connect(self._onGlobalContainerStackChanged)
+        self._onGlobalContainerStackChanged()
 
     def setWidth(self, width):
         if width: self._width = width
@@ -72,10 +71,12 @@ class BuildVolume(SceneNode):
         renderer.queueNode(self, mesh = self._grid_mesh, shader = self._grid_shader, backface_cull = True)
         if self._disallowed_area_mesh:
             renderer.queueNode(self, mesh = self._disallowed_area_mesh, shader = self._shader, transparent = True, backface_cull = True, sort = -9)
+
         return True
 
+    ##  Recalculates the build volume & disallowed areas.
     def rebuild(self):
-        if self._width == 0 or self._height == 0 or self._depth == 0:
+        if not self._width or not self._height or not self._depth:
             return
 
         min_w = -self._width / 2
@@ -87,6 +88,7 @@ class BuildVolume(SceneNode):
 
         mb = MeshBuilder()
 
+        # Outline 'cube' of the build volume
         mb.addLine(Vector(min_w, min_h, min_d), Vector(max_w, min_h, min_d), color = self.VolumeOutlineColor)
         mb.addLine(Vector(min_w, min_h, min_d), Vector(min_w, max_h, min_d), color = self.VolumeOutlineColor)
         mb.addLine(Vector(min_w, max_h, min_d), Vector(max_w, max_h, min_d), color = self.VolumeOutlineColor)
@@ -102,7 +104,7 @@ class BuildVolume(SceneNode):
         mb.addLine(Vector(min_w, max_h, min_d), Vector(min_w, max_h, max_d), color = self.VolumeOutlineColor)
         mb.addLine(Vector(max_w, max_h, min_d), Vector(max_w, max_h, max_d), color = self.VolumeOutlineColor)
 
-        self.setMeshData(mb.getData())
+        self.setMeshData(mb.build())
 
         mb = MeshBuilder()
         mb.addQuad(
@@ -111,142 +113,30 @@ class BuildVolume(SceneNode):
             Vector(max_w, min_h - 0.2, max_d),
             Vector(min_w, min_h - 0.2, max_d)
         )
-        self._grid_mesh = mb.getData()
+
         for n in range(0, 6):
-            v = self._grid_mesh.getVertex(n)
-            self._grid_mesh.setVertexUVCoordinates(n, v[0], v[2])
+            v = mb.getVertex(n)
+            mb.setVertexUVCoordinates(n, v[0], v[2])
+        self._grid_mesh = mb.build()
 
-        disallowed_area_height = 0.1
-        disallowed_area_size = 0
-        if self._disallowed_areas:
-            mb = MeshBuilder()
-            color = Color(0.0, 0.0, 0.0, 0.15)
-            for polygon in self._disallowed_areas:
-                points = polygon.getPoints()
-                first = Vector(self._clamp(points[0][0], min_w, max_w), disallowed_area_height, self._clamp(points[0][1], min_d, max_d))
-                previous_point = Vector(self._clamp(points[0][0], min_w, max_w), disallowed_area_height, self._clamp(points[0][1], min_d, max_d))
-                for point in points:
-                    new_point = Vector(self._clamp(point[0], min_w, max_w), disallowed_area_height, self._clamp(point[1], min_d, max_d))
-                    mb.addFace(first, previous_point, new_point, color = color)
-                    previous_point = new_point
+        self._volume_aabb = AxisAlignedBox(
+            minimum = Vector(min_w, min_h - 1.0, min_d),
+            maximum = Vector(max_w, max_h - self._raft_thickness, max_d))
 
-                # Find the largest disallowed area to exclude it from the maximum scale bounds
-                size = abs(numpy.max(points[:, 1]) - numpy.min(points[:, 1]))
-                disallowed_area_size = max(size, disallowed_area_size)
+    def getBoundingBox(self):
+        return self._volume_aabb
 
-            self._disallowed_area_mesh = mb.getData()
-        else:
-            self._disallowed_area_mesh = None
+    def _onGlobalContainerStackChanged(self):
+        if self._global_container_stack:
+            self._global_container_stack.propertyChanged.disconnect(self._onSettingPropertyChanged)
 
-        self._aabb = AxisAlignedBox(minimum = Vector(min_w, min_h - 1.0, min_d), maximum = Vector(max_w, max_h, max_d))
+        self._global_container_stack = Application.getInstance().getGlobalContainerStack()
 
-        skirt_size = 0.0
+        if self._global_container_stack:
+            self._global_container_stack.propertyChanged.connect(self._onSettingPropertyChanged)
 
-        profile = Application.getInstance().getMachineManager().getActiveProfile()
-        if profile:
-            skirt_size = self._getSkirtSize(profile)
-
-        scale_to_max_bounds = AxisAlignedBox(
-            minimum = Vector(min_w + skirt_size, min_h, min_d + skirt_size + disallowed_area_size),
-            maximum = Vector(max_w - skirt_size, max_h, max_d - skirt_size - disallowed_area_size)
-        )
-
-        Application.getInstance().getController().getScene()._maximum_bounds = scale_to_max_bounds
-
-    def _onActiveInstanceChanged(self):
-        self._active_instance = Application.getInstance().getMachineManager().getActiveMachineInstance()
-
-        if self._active_instance:
-            self._width = self._active_instance.getMachineSettingValue("machine_width")
-            self._height = self._active_instance.getMachineSettingValue("machine_height")
-            self._depth = self._active_instance.getMachineSettingValue("machine_depth")
-
-            self._updateDisallowedAreas()
+            self._width = self._global_container_stack.getProperty("machine_width", "value")
+            self._height = self._global_container_stack.getProperty("machine_height", "value")
+            self._depth = self._global_container_stack.getProperty("machine_depth", "value")
 
             self.rebuild()
-
-    def _onActiveProfileChanged(self):
-        if self._active_profile:
-            self._active_profile.settingValueChanged.disconnect(self._onSettingValueChanged)
-
-        self._active_profile = Application.getInstance().getMachineManager().getActiveProfile()
-        if self._active_profile:
-            self._active_profile.settingValueChanged.connect(self._onSettingValueChanged)
-            self._updateDisallowedAreas()
-            self.rebuild()
-
-    def _onSettingValueChanged(self, setting):
-        if setting in self._skirt_settings:
-            self._updateDisallowedAreas()
-            self.rebuild()
-
-    def _updateDisallowedAreas(self):
-        if not self._active_instance or not self._active_profile:
-            return
-
-        disallowed_areas = self._active_instance.getMachineSettingValue("machine_disallowed_areas")
-        areas = []
-
-        skirt_size = 0.0
-        if self._active_profile:
-            skirt_size = self._getSkirtSize(self._active_profile)
-
-        if disallowed_areas:
-            for area in disallowed_areas:
-                poly = Polygon(numpy.array(area, numpy.float32))
-                poly = poly.getMinkowskiHull(Polygon(numpy.array([
-                    [-skirt_size, 0],
-                    [-skirt_size * 0.707, skirt_size * 0.707],
-                    [0, skirt_size],
-                    [skirt_size * 0.707, skirt_size * 0.707],
-                    [skirt_size, 0],
-                    [skirt_size * 0.707, -skirt_size * 0.707],
-                    [0, -skirt_size],
-                    [-skirt_size * 0.707, -skirt_size * 0.707]
-                ], numpy.float32)))
-
-                areas.append(poly)
-
-        if skirt_size > 0:
-            half_machine_width = self._active_instance.getMachineSettingValue("machine_width") / 2
-            half_machine_depth = self._active_instance.getMachineSettingValue("machine_depth") / 2
-
-            areas.append(Polygon(numpy.array([
-                [-half_machine_width, -half_machine_depth],
-                [-half_machine_width, half_machine_depth],
-                [-half_machine_width + skirt_size, half_machine_depth - skirt_size],
-                [-half_machine_width + skirt_size, -half_machine_depth + skirt_size]
-            ], numpy.float32)))
-
-            areas.append(Polygon(numpy.array([
-                [half_machine_width, half_machine_depth],
-                [half_machine_width, -half_machine_depth],
-                [half_machine_width - skirt_size, -half_machine_depth + skirt_size],
-                [half_machine_width - skirt_size, half_machine_depth - skirt_size]
-            ], numpy.float32)))
-
-            areas.append(Polygon(numpy.array([
-                [-half_machine_width, half_machine_depth],
-                [half_machine_width, half_machine_depth],
-                [half_machine_width - skirt_size, half_machine_depth - skirt_size],
-                [-half_machine_width + skirt_size, half_machine_depth - skirt_size]
-            ], numpy.float32)))
-
-            areas.append(Polygon(numpy.array([
-                [half_machine_width, -half_machine_depth],
-                [-half_machine_width, -half_machine_depth],
-                [-half_machine_width + skirt_size, -half_machine_depth + skirt_size],
-                [half_machine_width - skirt_size, -half_machine_depth + skirt_size]
-            ], numpy.float32)))
-
-        self._disallowed_areas = areas
-
-    def _getSkirtSize(self, profile):
-        skirt_size = 0.0
-
-        return skirt_size
-
-    def _clamp(self, value, min_value, max_value):
-        return max(min(value, max_value), min_value)
-
-    _skirt_settings = []

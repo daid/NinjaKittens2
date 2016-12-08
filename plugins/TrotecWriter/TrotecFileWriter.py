@@ -12,7 +12,7 @@ from nk import Paths
 class TrotecFileWriter(MeshWriter):
     def __init__(self, filename):
         super().__init__()
-        self._dpi = 600.0
+        self._dpi = 333.0
         self._max_y = None
         self._max_x = None
         self._min_y = None

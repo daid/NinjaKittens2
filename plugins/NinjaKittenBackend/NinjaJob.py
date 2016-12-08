@@ -1,4 +1,3 @@
-from UM.Application import Application
 from UM.Scene.Iterator.DepthFirstIterator import DepthFirstIterator
 from UM.Scene.Scene import SceneNode
 from UM.Logger import Logger
@@ -44,10 +43,10 @@ class NinjaJob(Job):
         Logger.log("i", "ClosedPaths: %s", len(paths.closed_paths))
 
         paths = paths.processEvenOdd()
-        tool_diameter = self._profile.getSettingValue("tool_diameter")
-        cut_method = self._profile.getSettingValue("cut_method")
-        engrave_method = self._profile.getSettingValue("engrave_method")
-        engrave_line_distance = self._profile.getSettingValue("engrave_line_distance")
+        tool_diameter = self._profile["tool_diameter"]
+        cut_method = self._profile["cut_method"]
+        engrave_method = self._profile["engrave_method"]
+        engrave_line_distance = self._profile["engrave_line_distance"]
 
         if cut_method == "cut_all_inside" or cut_method == "engrave_all":
             tool_diameter = -tool_diameter
@@ -76,7 +75,7 @@ class NinjaJob(Job):
             elif engrave_method == "cross":
                 p_h = FillLineGenerator.FillLineGenerator(90, engrave_line_distance, node).getResult()
                 node = FillLineGenerator.FillLineGenerator(0, engrave_line_distance, node).getResult()
-                node.open_paths + p_h.open_paths
+                node.open_paths += p_h.open_paths
             elif engrave_method == "concentric":
                 p = node
                 while len(p.closed_paths) > 0:

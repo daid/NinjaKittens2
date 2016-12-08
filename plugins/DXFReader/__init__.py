@@ -1,24 +1,21 @@
-# Copyright (c) 2015 Ultimaker B.V.
-# Uranium is released under the terms of the AGPLv3 or higher.
+# Copyright (c) 2015 David Braam
+# NinjaKittens is released under the terms of the AGPLv3 or higher.
 
 from . import DXFReader
-
-from UM.i18n import i18nCatalog
-i18n_catalog = i18nCatalog("nk")
 
 def getMetaData():
     return {
         "plugin": {
-            "name": i18n_catalog.i18nc("@label", "DXF Reader"),
+            "name": "DXF Reader",
             "author": "Daid",
             "version": "1.0",
-            "description": i18n_catalog.i18nc("@info:whatsthis", "Provides support for reading DXF files."),
-            "api": 2
+            "description": "Provides support for reading DXF files.",
+            "api": 3
         },
         "mesh_reader": [
             {
                 "extension": "dxf",
-                "description": i18n_catalog.i18nc("@item:inlistbox", "DXF File")
+                "description": "DXF File"
             }
         ]
     }

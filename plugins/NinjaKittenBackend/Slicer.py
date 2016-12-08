@@ -7,7 +7,7 @@ class Slicer:
         self._segments = None
 
     def execute(self, height):
-        self._slice_height = self._mesh_data.getExtents().bottom + self._mesh_data.getExtents().height * height
+        self._slice_height = height
         self._segments = []
         if self._mesh_data.hasIndices():
             for indices in self._mesh_data.getIndices():

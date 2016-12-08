@@ -13,7 +13,7 @@ def getMetaData():
             "author": "Daid",
             "version": "1.0",
             "description": catalog.i18nc("@info:whatsthis", "Writes Trotec lasercut to a file"),
-            "api": 2
+            "api": 3
         }
     }
 

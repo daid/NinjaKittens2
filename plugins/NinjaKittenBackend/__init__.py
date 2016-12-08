@@ -13,7 +13,7 @@ def getMetaData():
             "name": catalog.i18nc("@label", "NinjaKittens Backend"),
             "author": "Daid",
             "description": catalog.i18nc("@info:whatsthis", "Provides the NinjaKittens backend"),
-            "api": 2
+            "api": 3
         }
     }
 

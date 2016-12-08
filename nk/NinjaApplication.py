@@ -1,5 +1,3 @@
-# Copyright (c) 2015 Ultimaker B.V.
-
 from UM.Qt.QtApplication import QtApplication
 from UM.Scene.SceneNode import SceneNode
 from UM.Scene.Camera import Camera
@@ -10,10 +8,9 @@ from UM.Resources import Resources
 from UM.Scene.ToolHandle import ToolHandle
 from UM.Scene.Iterator.DepthFirstIterator import DepthFirstIterator
 from UM.Mesh.ReadMeshJob import ReadMeshJob
-from UM.Logger import Logger
 from UM.Preferences import Preferences
 from UM.JobQueue import JobQueue
-from UM.Settings.MachineInstance import MachineInstance
+from UM.Settings.ContainerRegistry import ContainerRegistry
 
 from UM.Scene.Selection import Selection
 from UM.Scene.GroupDecorator import GroupDecorator
@@ -29,11 +26,13 @@ from . import BuildVolume
 from . import CameraAnimation
 from . import NinjaSplashScreen
 
+import nk.Settings.MachineManager
+
 from PyQt5.QtCore import pyqtSlot, QUrl, Qt, pyqtSignal, pyqtProperty, QEvent, Q_ENUMS
 from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtQml import qmlRegisterUncreatableType
+from PyQt5.QtQml import qmlRegisterSingletonType
 
-import platform
 import sys
 import os
 import os.path
@@ -41,10 +40,6 @@ import numpy
 import copy
 numpy.seterr(all="ignore")
 
-if platform.system() == "Linux": # Needed for platform.linux_distribution, which is not available on Windows and OSX
-    # For Ubuntu: https://bugs.launchpad.net/ubuntu/+source/python-qt4/+bug/941826
-    if platform.linux_distribution()[0] in ("Ubuntu", ): # Just in case it also happens on Debian, so it can be added
-        from OpenGL import GL
 
 try:
     from nk.NinjaVersion import NinjaVersion
@@ -55,14 +50,24 @@ except ImportError:
 class NinjaApplication(QtApplication):
     class ResourceTypes:
         QmlFiles = Resources.UserType + 1
+        UserInstanceContainer = Resources.UserType + 2
+        MachineStack = Resources.UserType + 3
     Q_ENUMS(ResourceTypes)
 
     def __init__(self):
-        Resources.addSearchPath(os.path.join(QtApplication.getInstallPrefix(), "share", "nk"))
+        Resources.addSearchPath(os.path.join(QtApplication.getInstallPrefix(), "share", "nk", "resources"))
         if not hasattr(sys, "frozen"):
-            Resources.addSearchPath(os.path.join(os.path.abspath(os.path.dirname(__file__)), ".."))
+            Resources.addSearchPath(os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "resources"))
 
-        super().__init__(name="nk", version=NinjaVersion)
+        Resources.addStorageType(self.ResourceTypes.UserInstanceContainer, "user")
+        Resources.addStorageType(self.ResourceTypes.MachineStack, "machine_instances")
+
+        ContainerRegistry.getInstance().addResourceType(self.ResourceTypes.UserInstanceContainer)
+        ContainerRegistry.getInstance().addResourceType(self.ResourceTypes.MachineStack)
+
+        self._version_upgrade_manager = None
+        self._machine_manager = None    # This is initialized on demand.
+        super().__init__(name="ninjakittens", version=NinjaVersion)
 
         self.setWindowIcon(QIcon(Resources.getPath(Resources.Images, "nk-icon.png")))
 
@@ -96,6 +101,8 @@ class NinjaApplication(QtApplication):
 
         JobQueue.getInstance().jobFinished.connect(self._onJobFinished)
 
+        ContainerRegistry.getInstance().load()
+
         self._recent_files = []
         files = Preferences.getInstance().getValue("nk/recent_files").split(";")
         for f in files:
@@ -103,19 +110,6 @@ class NinjaApplication(QtApplication):
                 continue
 
             self._recent_files.append(QUrl.fromLocalFile(f))
-
-        self._addAllMachines()
-
-    def _addAllMachines(self):
-        # Check if there is an instance of each known machine, else add it
-        manager = self.getMachineManager()
-        for machine_definition in manager.getMachineDefinitions():
-            if machine_definition.isVisible():
-                if manager.findMachineInstance(machine_definition.getName()) is None:
-                    manager.addMachineInstance(MachineInstance(manager, name=machine_definition.getName(), definition=machine_definition))
-        # No machine selected? Select the first one
-        if manager.getActiveMachineInstance() is None:
-            manager.setActiveMachineInstance(manager.getMachineInstance(0))
 
     ##  Handle loading of all plugin types (and the backend explicitly)
     #   \sa PluginRegistery
@@ -177,6 +171,8 @@ class NinjaApplication(QtApplication):
 
         self.showSplashMessage(self._i18n_catalog.i18nc("@info:progress", "Loading interface..."))
 
+        qmlRegisterSingletonType(nk.Settings.MachineManager.MachineManager, "NinjaKittens", 1, 0, "MachineManager", self.getMachineManager)
+
         self.setMainQml(Resources.getPath(self.ResourceTypes.QmlFiles, "NinjaKittens.qml"))
         self.initializeEngine()
 
@@ -188,6 +184,11 @@ class NinjaApplication(QtApplication):
 
             self.exec_()
 
+    def getMachineManager(self, *args):
+        if self._machine_manager is None:
+            self._machine_manager = nk.Settings.MachineManager.MachineManager.createMachineManager()
+        return self._machine_manager
+
     #   Handle Qt events
     def event(self, event):
         if event.type() == QEvent.FileOpen:
@@ -197,6 +198,8 @@ class NinjaApplication(QtApplication):
 
     def registerObjects(self, engine):
         engine.rootContext().setContextProperty("App", self)
+
+        qmlRegisterSingletonType(QUrl.fromLocalFile(Resources.getPath(NinjaApplication.ResourceTypes.QmlFiles, "Actions.qml")), "NinjaKittens", 1, 0, "Actions")
 
         qmlRegisterUncreatableType(NinjaApplication, "NinjaKittens", 1, 0, "ResourceTypes", "Just an Enum type")
 
@@ -479,9 +482,6 @@ class NinjaApplication(QtApplication):
         job = ReadMeshJob(os.path.abspath(file))
         job.finished.connect(self._onFileLoaded)
         job.start()
-
-    def _onAddMachineRequested(self):
-        self.requestAddPrinter.emit()
 
     ##  Display text on the splash screen.
     def showSplashMessage(self, message):

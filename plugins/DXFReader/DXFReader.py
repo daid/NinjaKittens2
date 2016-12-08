@@ -2,6 +2,7 @@
 # NinjaKittens is released under the terms of the AGPLv3 or higher.
 
 from UM.Mesh.MeshReader import MeshReader
+from UM.Mesh.MeshBuilder import MeshBuilder
 from UM.Mesh.MeshData import MeshData
 from UM.Logger import Logger
 from UM.Scene.SceneNode import SceneNode
@@ -24,7 +25,7 @@ class DXFReader(MeshReader):
 
     def read(self, file_name):
         self._dxf = DXFObjectReader.DXFObjectReader(open(file_name, "rt"))
-        self._mesh = MeshData()
+        self._mesh = MeshBuilder()
         for obj in self._dxf:
             if obj.getName() == "SECTION":
                 if obj.get(2) == "ENTITIES":
@@ -46,7 +47,7 @@ class DXFReader(MeshReader):
         #self._mesh.calculateNormals()
 
         node = SceneNode()
-        node.setMeshData(self._mesh)
+        node.setMeshData(self._mesh.build())
         return node
 
     def _handleTables(self):

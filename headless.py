@@ -1,98 +1,110 @@
 import os
 import time
-import imp
 import argparse
-import glob
+import traceback
 
-from UM.Preferences import Preferences
-from UM.Resources import Resources
 from UM.Logger import Logger
-from UM.Application import Application
-from UM.Settings.MachineInstance import MachineInstance
 
+from plugins.DXFReader import DXFReader
+from plugins.NinjaKittenBackend import NinjaJob
+from plugins.TrotecWriter import TrotecFileWriter
+from plugins.HtmlSvgWriter import HtmlSvgFileWriter
 
-# Helper function to load the modules of plugins. As we cannot get a reference to the modules from the plugin manager
-def loadPlugin(id):
-    file, path, desc = imp.find_module(id, [ os.path.join(os.path.dirname(__file__), "plugins") ])
-    return imp.load_module(id, file, path, desc)
-
-
-# Get references to objects we need to use for headless processing
-NinjaJob = loadPlugin("NinjaKittenBackend").NinjaJob
-TrotecFileWriter = loadPlugin("TrotecWriter").TrotecFileWriter
-
-
-class HeadlessApplication(Application):
+class HeadlessApplication:
     def __init__(self):
-        self._output_file_format = "Ts300_%s.tsf"
-        self._output_error_format = "%s.error.txt"
+        self.__readers = [
+            {"class": DXFReader.DXFReader},
+        ]
+        self.__writers = [
+            {"class": TrotecFileWriter.TrotecFileWriter, "prefix": "Ts300_", "extension": ".tsf", "settings": {
+                'tool_diameter': 0.1,
+                'cut_method': 'cut_all_outside',
+                'engrave_method': 'horizontal',
+                'engrave_line_distance': 1.0,
+            }},
+            {"class": TrotecFileWriter.TrotecFileWriter, "prefix": "Ts300_engrave_", "extension": ".tsf", "settings": {
+                'tool_diameter': 0.1,
+                'cut_method': 'cut_outline_engrave_rest',
+                'engrave_method': 'horizontal',
+                'engrave_line_distance': 1.0,
+            }},
+            {"class": HtmlSvgFileWriter.HtmlSvgFileWriter, "prefix": "Debug_", "extension": ".html", "settings": {
+                'tool_diameter': 0.1,
+                'cut_method': 'cut_outline_engrave_rest',
+                'engrave_method': 'horizontal',
+                'engrave_line_distance': 1.0,
+            }},
+        ]
 
-        # Hack to prevent Uranium to create config directories
-        Resources.getStoragePathForType = lambda type: "NO_PATH"
-        # Search in our own path for plugins and stuff
-        Resources.addSearchPath(os.path.join(os.path.abspath(os.path.dirname(__file__))))
-        super().__init__(name="nk_headless", version="1.0")
-        # Do not load the FileLogger (yes, more hacks)
-        self.getPluginRegistry()._plugins['FileLogger'] = None
-        self.getPluginRegistry().addPluginLocation(os.path.join(os.path.abspath(os.path.dirname(__file__)), "plugins"))
-        self.getPluginRegistry().loadPlugins()
-
-        # Add machines so we
-        manager = self.getMachineManager()
-        manager.loadAll()
-        for machine_definition in manager.getMachineDefinitions():
-            if machine_definition.isVisible():
-                manager.addMachineInstance(MachineInstance(manager, name=machine_definition.getName(), definition=machine_definition))
-        if manager.getActiveMachineInstance() is None:
-            manager.setActiveMachineInstance(manager.getMachineInstance(0))
-        manager.setActiveProfile(manager.getProfiles()[0])
-
-    def formatFilename(self, format, filename):
-        return os.path.join(os.path.dirname(filename), format % os.path.basename(filename))
+    def __formatFilename(self, full_path, prefix, extension):
+        return os.path.join(os.path.dirname(full_path), "%s%s%s" % (prefix, os.path.basename(full_path), extension))
 
     def run(self, path):
-        if os.path.isdir(path):
-            while True:
-                for filename in glob.glob(os.path.join(path, "*.dxf")):
-                    if not os.path.isfile(self.formatFilename(self._output_file_format, filename)) and not os.path.isfile(self.formatFilename(self._output_error_format, filename)):
-                        self.processFile(filename)
-                for filename in glob.glob(os.path.join(path, "*.DXF")):
-                    if not os.path.isfile(self.formatFilename(self._output_file_format, filename)) and not os.path.isfile(self.formatFilename(self._output_error_format, filename)):
-                        self.processFile(filename)
-                time.sleep(15)
+        for reader in self.__readers:
+            reader["instance"] = reader["class"]()
+        while True:
+            try:
+                for filename in os.listdir(path):
+                    full_path = os.path.join(path, filename)
+                    if os.path.isfile(full_path):
+                        if self.__needToProcessFile(full_path):
+                            try:
+                                self.__processFile(full_path)
+                            except:
+                                self.__writeException(self.__formatFilename(full_path, "", ".error.log"))
+            except:
+                self.__writeException(os.path.join(path, "_nk2.error.log"))
+            time.sleep(15)
 
-    def processFile(self, filename):
-        Logger.log("i", "Loading mesh: %s", filename)
-        node = self.getMeshFileHandler().getReaderForFile(filename).read(filename)
+    def __needToProcessFile(self, full_path):
+        for reader in self.__readers:
+            if reader["instance"].acceptsFile(full_path):
+                result_error_log_file = self.__formatFilename(full_path, "", ".error.log")
+                if os.path.isfile(result_error_log_file):
+                    return False
+                for writer in self.__writers:
+                    result_file = self.__formatFilename(full_path, writer["prefix"], writer["extension"])
+                    result_error_log_file = self.__formatFilename(full_path, writer["prefix"], writer["extension"] + ".error.log")
+                    if not os.path.isfile(result_file) and not os.path.isfile(result_error_log_file):
+                        return True
+                return False
 
-        Logger.log("i", "Running job")
-        job = NinjaJob.NinjaJob(node, Application.getInstance().getMachineManager().getActiveProfile())
-        job.run()
+    def __processFile(self, full_path):
+        Logger.log("i", "Loading mesh: %s", full_path)
+        node = None
+        for reader in self.__readers:
+            if reader["instance"].acceptsFile(full_path):
+                node = reader["class"]().read(full_path)
+                break
 
-        if job.getResult() is not None:
-            Logger.log("i", "Going to write output")
-            output_filename = self.formatFilename(self._output_file_format, filename)
-            stream = open(output_filename, "wb")
-            writer = TrotecFileWriter.TrotecFileWriter(output_filename)
-            writer.write(stream, job.getResult())
-            stream.close()
-        else:
-            output_filename = self.formatFilename(self._output_error_format, filename)
-            stream = open(output_filename, "wt")
-            stream.write(job.getError())
-            stream.close()
+        for writer in self.__writers:
+            result_file = self.__formatFilename(full_path, writer["prefix"], writer["extension"])
+            result_error_log_file = self.__formatFilename(full_path, writer["prefix"], writer["extension"] + ".error.log")
+
+            try:
+                Logger.log("i", "Running job")
+                job = NinjaJob.NinjaJob(node, writer["settings"])
+                job.run()
+                Logger.log("i", "Going to write output: %s", result_file)
+                stream = open(result_file, "wb")
+                writer = writer["class"](result_file)
+                writer.write(stream, job.getResult())
+                stream.close()
+            except:
+                self.__writeException(result_error_log_file)
         Logger.log("i", "Finished")
 
-    def functionEvent(self, event):
-        pass #ignore all events, we are running synchronized
-
-    def parseCommandLine(self):
-        pass
+    def __writeException(self, filename):
+        error_string = traceback.format_exc()
+        Logger.log("e", error_string)
+        stream = open(filename, "at")
+        stream.write(error_string)
+        stream.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('path')
 
     args = parser.parse_args()
-    app = HeadlessApplication.getInstance()
+    app = HeadlessApplication()
     app.run(args.path)

@@ -1,4 +1,4 @@
-from UM.Mesh.MeshData import MeshData
+from UM.Mesh.MeshBuilder import MeshBuilder
 from UM.Scene.SceneNodeDecorator import SceneNodeDecorator
 from UM.Math.Color import Color
 
@@ -24,7 +24,7 @@ class PathResultDecorator(SceneNodeDecorator):
     def setPaths(self, engrave_paths, cut_paths):
         self._cut_paths = cut_paths
         self._engrave_paths = engrave_paths
-        self._mesh = MeshData()
+        self._mesh = MeshBuilder()
 
         last_point = None
 
@@ -68,7 +68,7 @@ class PathResultDecorator(SceneNodeDecorator):
                 self._addMeshLine(last_point, point, self._cut_color)
                 last_point = point
 
-        self.getNode().setMeshData(self._mesh)
+        self.getNode().setMeshData(self._mesh.build())
 
     def _addMeshLine(self, p0, p1, color):
         self._mesh.addVertex(p0[0] / Paths.SCALE, 0.0, p0[1] / Paths.SCALE)

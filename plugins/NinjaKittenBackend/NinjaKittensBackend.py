@@ -23,11 +23,7 @@ class NinjaKittensBackend(Backend):
         self._scene = Application.getInstance().getController().getScene()
         self._scene.sceneChanged.connect(self._onSceneChanged)
 
-        Application.getInstance().getMachineManager().activeMachineInstanceChanged.connect(self._processScene)
-
-        self._profile = None
-        Application.getInstance().getMachineManager().activeProfileChanged.connect(self._onActiveProfileChanged)
-        self._onActiveProfileChanged()
+        Application.getInstance().globalContainerStackChanged.connect(self._onGlobalStackChanged)
 
         self._change_timer = None
 
@@ -46,14 +42,8 @@ class NinjaKittensBackend(Backend):
 
         self._processScene()
 
-    def _onActiveProfileChanged(self):
-        if self._profile:
-            self._profile.settingValueChanged.disconnect(self._onSettingChanged)
-
-        self._profile = Application.getInstance().getMachineManager().getActiveProfile()
-        if self._profile:
-            self._profile.settingValueChanged.connect(self._onSettingChanged)
-            self._processScene()
+    def _onGlobalStackChanged(self):
+        pass
 
     def _onSettingChanged(self, setting):
         self._processScene()

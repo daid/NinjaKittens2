@@ -5,9 +5,7 @@ import QtQuick 2.0
 
 import QtQuick.Controls 1.2
 
-import UM 1.0 as UM
+import "Settings"
 
-UM.SettingView {
-    expandedCategories: App.expandedCategories;
-    onExpandedCategoriesChanged: App.setExpandedCategories(expandedCategories);
+SettingView {
 }

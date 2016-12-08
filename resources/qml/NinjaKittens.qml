@@ -7,33 +7,56 @@ import QtQuick.Controls.Styles 1.1
 import QtQuick.Layouts 1.1
 import QtQuick.Dialogs 1.1
 
-import UM 1.1 as UM
+import UM 1.2 as UM
+import NinjaKittens 1.0 as NinjaKittens
+
+import "Menus"
 
 UM.MainWindow
 {
     id: base
-    //: Cura application window title
-    title: catalog.i18nc("@title:window","NinjaKittens");
-
+    //: NinjaKittens application window title
+    title: catalog.i18nc("@title:window","NinjaKittens2");
     viewportRect: Qt.rect(0, 0, (base.width - sidebar.width) / base.width, 1.0)
+    property bool monitoringPrint: false
+    Component.onCompleted:
+    {
+        Printer.setMinimumWindowSize(UM.Theme.getSize("window_minimum_size"))
+
+        // Workaround silly issues with QML Action's shortcut property.
+        //
+        // Currently, there is no way to define shortcuts as "Application Shortcut".
+        // This means that all Actions are "Window Shortcuts". The code for this
+        // implements a rather naive check that just checks if any of the action's parents
+        // are a window. Since the "Actions" object is a singleton it has no parent by
+        // default. If we set its parent to something contained in this window, the
+        // shortcut will activate properly because one of its parents is a window.
+        //
+        // This has been fixed for QtQuick Controls 2 since the Shortcut item has a context property.
+        NinjaKittens.Actions.parent = backgroundItem
+    }
 
     Item
     {
         id: backgroundItem;
         anchors.fill: parent;
-        UM.I18nCatalog{id: catalog; name:"nk"}
+        UM.I18nCatalog{id: catalog; name:"cura"}
+
+        signal hasMesh(string name) //this signal sends the filebase name so it can be used for the JobSpecs.qml
+        function getMeshName(path){
+            //takes the path the complete path of the meshname and returns only the filebase
+            var fileName = path.slice(path.lastIndexOf("/") + 1)
+            var fileBase = fileName.slice(0, fileName.lastIndexOf("."))
+            return fileBase
+        }
 
         //DeleteSelection on the keypress backspace event
         Keys.onPressed: {
             if (event.key == Qt.Key_Backspace)
             {
-                if(objectContextMenu.objectId != 0)
-                {
-                    App.deleteObject(objectContextMenu.objectId);
-                }
+                NinjaKittens.Actions.deleteSelection.trigger()
             }
         }
-
 
         UM.ApplicationMenu
         {
@@ -43,54 +66,27 @@ UM.MainWindow
             Menu
             {
                 id: fileMenu
-                //: File menu
-                title: catalog.i18nc("@title:menu","&File");
+                title: catalog.i18nc("@title:menu menubar:toplevel","&File");
 
                 MenuItem {
-                    action: actions.open;
+                    action: NinjaKittens.Actions.open;
                 }
 
-                Menu
-                {
-                    id: recentFilesMenu;
-                    title: catalog.i18nc("@title:menu", "Open &Recent")
-                    iconName: "document-open-recent";
-
-                    enabled: App.recentFiles.length > 0;
-
-                    Instantiator
-                    {
-                        model: App.recentFiles
-                        MenuItem
-                        {
-                            text:
-                            {
-                                var path = modelData.toString()
-                                return (index + 1) + ". " + path.slice(path.lastIndexOf("/") + 1);
-                            }
-                            onTriggered: {
-                                UM.MeshFileHandler.readLocalFile(modelData);
-                                openDialog.sendMeshName(modelData.toString())
-                            }
-                        }
-                        onObjectAdded: recentFilesMenu.insertItem(index, object)
-                        onObjectRemoved: recentFilesMenu.removeItem(object)
-                    }
-                }
+                RecentFilesMenu { }
 
                 MenuSeparator { }
 
                 MenuItem
                 {
-                    text: catalog.i18nc("@action:inmenu", "&Save Selection to File");
+                    text: catalog.i18nc("@action:inmenu menubar:file", "&Save Selection to File");
                     enabled: UM.Selection.hasSelection;
                     iconName: "document-save-as";
-                    onTriggered: UM.OutputDeviceManager.requestWriteSelectionToDevice("local_file", App.jobName);
+                    onTriggered: UM.OutputDeviceManager.requestWriteSelectionToDevice("local_file", PrintInformation.jobName, { "filter_by_machine": false });
                 }
                 Menu
                 {
                     id: saveAllMenu
-                    title: catalog.i18nc("@title:menu","Save &All")
+                    title: catalog.i18nc("@title:menu menubar:file","Save &All")
                     iconName: "document-save-all";
                     enabled: devicesModel.rowCount() > 0 && UM.Backend.progress > 0.99;
 
@@ -101,133 +97,49 @@ UM.MainWindow
                         MenuItem
                         {
                             text: model.description;
-                            onTriggered: UM.OutputDeviceManager.requestWriteToDevice(model.id, App.jobName);
+                            onTriggered: UM.OutputDeviceManager.requestWriteToDevice(model.id, PrintInformation.jobName, { "filter_by_machine": false });
                         }
                         onObjectAdded: saveAllMenu.insertItem(index, object)
                         onObjectRemoved: saveAllMenu.removeItem(object)
                     }
                 }
 
+                MenuItem { action: NinjaKittens.Actions.reloadAll; }
+
                 MenuSeparator { }
 
-                MenuItem { action: actions.quit; }
+                MenuItem { action: NinjaKittens.Actions.quit; }
             }
 
             Menu
             {
-                //: Edit menu
-                title: catalog.i18nc("@title:menu","&Edit");
+                title: catalog.i18nc("@title:menu menubar:toplevel","&Edit");
 
-                MenuItem { action: actions.undo; }
-                MenuItem { action: actions.redo; }
+                MenuItem { action: NinjaKittens.Actions.undo; }
+                MenuItem { action: NinjaKittens.Actions.redo; }
                 MenuSeparator { }
-                MenuItem { action: actions.deleteSelection; }
-                MenuItem { action: actions.deleteAll; }
-                MenuItem { action: actions.resetAllTranslation; }
-                MenuItem { action: actions.resetAll; }
+                MenuItem { action: NinjaKittens.Actions.selectAll; }
+                MenuItem { action: NinjaKittens.Actions.deleteSelection; }
+                MenuItem { action: NinjaKittens.Actions.deleteAll; }
+                MenuItem { action: NinjaKittens.Actions.resetAllTranslation; }
+                MenuItem { action: NinjaKittens.Actions.resetAll; }
                 MenuSeparator { }
-                MenuItem { action: actions.groupObjects;}
-                MenuItem { action: actions.mergeObjects;}
-                MenuItem { action: actions.unGroupObjects;}
+                MenuItem { action: NinjaKittens.Actions.groupObjects;}
+                MenuItem { action: NinjaKittens.Actions.mergeObjects;}
+                MenuItem { action: NinjaKittens.Actions.unGroupObjects;}
             }
 
-            Menu
-            {
-                title: catalog.i18nc("@title:menu","&View");
-                id: top_view_menu
-                Instantiator 
-                {
-                    model: UM.ViewModel { }
-                    MenuItem 
-                    {
-                        text: model.name;
-                        checkable: true;
-                        checked: model.active;
-                        exclusiveGroup: view_menu_top_group;
-                        onTriggered: UM.Controller.setActiveView(model.id);
-                    }
-                    onObjectAdded: top_view_menu.insertItem(index, object)
-                    onObjectRemoved: top_view_menu.removeItem(object)
-                }
-                ExclusiveGroup { id: view_menu_top_group; }
-            }
-            Menu
-            {
-                id: machineMenu;
-                //: Machine menu
-                title: catalog.i18nc("@title:menu","&Machine");
-
-                Instantiator
-                {
-                    model: UM.MachineInstancesModel { }
-                    MenuItem
-                    {
-                        text: model.name;
-                        checkable: true;
-                        checked: model.active;
-                        exclusiveGroup: machineMenuGroup;
-                        onTriggered: UM.MachineManager.setActiveMachineInstance(model.name)
-                    }
-                    onObjectAdded: machineMenu.insertItem(index, object)
-                    onObjectRemoved: machineMenu.removeItem(object)
-                }
-
-                ExclusiveGroup { id: machineMenuGroup; }
-
-                MenuSeparator { visible: UM.MachineManager.hasVariants; }
-
-                Instantiator
-                {
-                    model: UM.MachineVariantsModel { }
-                    MenuItem {
-                        text: model.name;
-                        checkable: true;
-                        checked: model.active;
-                        exclusiveGroup: machineVariantsGroup;
-                        onTriggered: UM.MachineManager.setActiveMachineVariant(model.name)
-                    }
-                    onObjectAdded: machineMenu.insertItem(index, object)
-                    onObjectRemoved: machineMenu.removeItem(object)
-                }
-
-                ExclusiveGroup { id: machineVariantsGroup; }
-            }
-
-            Menu
-            {
-                id: profileMenu
-                title: catalog.i18nc("@title:menu", "&Profile")
-
-                Instantiator
-                {
-                    model: UM.ProfilesModel { }
-                    MenuItem {
-                        text: model.name;
-                        checkable: true;
-                        checked: model.active;
-                        exclusiveGroup: profileMenuGroup;
-                        onTriggered: UM.MachineManager.setActiveProfile(model.name)
-                    }
-                    onObjectAdded: profileMenu.insertItem(index, object)
-                    onObjectRemoved: profileMenu.removeItem(object)
-                }
-
-                ExclusiveGroup { id: profileMenuGroup; }
-
-                MenuSeparator { }
-
-                MenuItem { action: actions.manageProfiles; }
-            }
+            ViewMenu { title: catalog.i18nc("@title:menu", "&View") }
 
             Menu
             {
                 id: extension_menu
-                //: Extensions menu
-                title: catalog.i18nc("@title:menu","E&xtensions");
+                title: catalog.i18nc("@title:menu menubar:toplevel","E&xtensions");
 
-                Instantiator 
+                Instantiator
                 {
-                    model: UM.Models.extensionModel
+                    id: extensions
+                    model: UM.ExtensionModel { }
 
                     Menu
                     {
@@ -241,7 +153,7 @@ UM.MainWindow
                             MenuItem
                             {
                                 text: model.text
-                                onTriggered: UM.Models.extensionModel.subMenuTriggered(name, model.text)
+                                onTriggered: extensions.model.subMenuTriggered(name, model.text)
                             }
                             onObjectAdded: sub_menu.insertItem(index, object)
                             onObjectRemoved: sub_menu.removeItem(object)
@@ -255,21 +167,32 @@ UM.MainWindow
 
             Menu
             {
-                //: Settings menu
-                title: catalog.i18nc("@title:menu","&Settings");
+                title: catalog.i18nc("@title:menu menubar:toplevel","P&references");
 
-                MenuItem { action: actions.preferences; }
+                MenuItem { action: NinjaKittens.Actions.preferences; }
             }
 
             Menu
             {
                 //: Help menu
-                title: catalog.i18nc("@title:menu","&Help");
+                title: catalog.i18nc("@title:menu menubar:toplevel","&Help");
 
-                MenuItem { action: actions.showEngineLog; }
+                MenuItem { action: NinjaKittens.Actions.showEngineLog; }
+                MenuItem { action: NinjaKittens.Actions.documentation; }
+                MenuItem { action: NinjaKittens.Actions.reportBug; }
                 MenuSeparator { }
-                MenuItem { action: actions.about; }
+                MenuItem { action: NinjaKittens.Actions.about; }
             }
+        }
+
+        UM.SettingPropertyProvider
+        {
+            id: machineExtruderCount
+
+            containerStackId: NinjaKittens.MachineManager.activeMachineId
+            key: "machine_extruder_count"
+            watchedProperties: [ "value" ]
+            storeIndex: 0
         }
 
         Item
@@ -294,21 +217,11 @@ UM.MainWindow
                             UM.MeshFileHandler.readLocalFile(drop.urls[i]);
                             if (i == drop.urls.length - 1)
                             {
-                                openDialog.sendMeshName(drop.urls[i].toString())
+                                var meshName = backgroundItem.getMeshName(drop.urls[i].toString())
+                                backgroundItem.hasMesh(decodeURIComponent(meshName))
                             }
                         }
                     }
-                }
-            }
-
-            UM.MessageStack
-            {
-                anchors
-                {
-                    horizontalCenter: parent.horizontalCenter
-                    horizontalCenterOffset: -(UM.Theme.sizes.logo.width/ 2)
-                    top: parent.verticalCenter;
-                    bottom: parent.bottom;
                 }
             }
 
@@ -316,15 +229,9 @@ UM.MainWindow
             {
                 id: view_panel
 
-                //anchors.left: parent.left;
-                //anchors.right: parent.right;
-                //anchors.bottom: parent.bottom
                 anchors.top: viewModeButton.bottom
-                anchors.topMargin: UM.Theme.sizes.default_margin.height;
-                anchors.right: sidebar.left;
-                anchors.rightMargin: UM.Theme.sizes.window_margin.width;
-                //anchors.bottom: buttons.top;
-                //anchors.bottomMargin: UM.Theme.sizes.default_margin.height;
+                anchors.topMargin: UM.Theme.getSize("default_margin").height;
+                anchors.left: viewModeButton.left;
 
                 height: childrenRect.height;
 
@@ -334,20 +241,16 @@ UM.MainWindow
             Button
             {
                 id: openFileButton;
-                //style: UM.Backend.progress < 0 ? UM.Theme.styles.open_file_button : UM.Theme.styles.tool_button;
-                //style: UM.Theme.styles.open_file_button
                 text: catalog.i18nc("@action:button","Open File");
-                iconSource: UM.Theme.icons.load
-                style: UM.Theme.styles.open_file_button
+                iconSource: UM.Theme.getIcon("load")
+                style: UM.Theme.styles.tool_button
                 tooltip: '';
                 anchors
                 {
                     top: parent.top;
-                    //topMargin: UM.Theme.sizes.loadfile_margin.height
                     left: parent.left;
-                    //leftMargin: UM.Theme.sizes.loadfile_margin.width
                 }
-                action: actions.open;
+                action: NinjaKittens.Actions.open;
             }
 
             Image
@@ -356,69 +259,33 @@ UM.MainWindow
                 anchors
                 {
                     left: parent.left
-                    leftMargin: UM.Theme.sizes.default_margin.width;
+                    leftMargin: UM.Theme.getSize("default_margin").width;
                     bottom: parent.bottom
-                    bottomMargin: UM.Theme.sizes.default_margin.height;
+                    bottomMargin: UM.Theme.getSize("default_margin").height;
                 }
 
-                source: UM.Theme.images.logo;
-                width: UM.Theme.sizes.logo.width;
-                height: UM.Theme.sizes.logo.height;
+                source: UM.Theme.getImage("logo");
+                width: UM.Theme.getSize("logo").width;
+                height: UM.Theme.getSize("logo").height;
+                z: -1;
 
                 sourceSize.width: width;
                 sourceSize.height: height;
             }
 
-            Button
-            {
-                id: viewModeButton
-                property bool verticalTooltip: true
 
-                anchors
-                {
-                    top: parent.top;
-                    right: sidebar.left;
-                    rightMargin: UM.Theme.sizes.window_margin.width;
-                }
-                text: catalog.i18nc("@action:button","View Mode");
-                iconSource: UM.Theme.icons.viewmode;
-
-                style: UM.Theme.styles.tool_button;
-                tooltip: '';
-                menu: Menu
-                {
-                    id: viewMenu;
-                    Instantiator
-                    {
-                        id: viewMenuInstantiator
-                        model: UM.ViewModel { }
-                        MenuItem
-                        {
-                            text: model.name
-                            checkable: true;
-                            checked: model.active
-                            exclusiveGroup: viewMenuGroup;
-                            onTriggered: UM.Controller.setActiveView(model.id);
-                        }
-                        onObjectAdded: viewMenu.insertItem(index, object)
-                        onObjectRemoved: viewMenu.removeItem(object)
-                    }
-
-                    ExclusiveGroup { id: viewMenuGroup; }
-                }
-            }
 
             Toolbar
             {
                 id: toolbar;
 
+                property int mouseX: base.mouseX
+                property int mouseY: base.mouseY
+
                 anchors {
-                    left: parent.left
-                    top: parent.top
-                    topMargin: UM.Theme.sizes.window_margin.height + UM.Theme.sizes.button.height
-                    //horizontalCenter: parent.horizontalCenter
-                    //horizontalCenterOffset: -(UM.Theme.sizes.sidebar.width / 2)
-                    //top: parent.top;
+                    top: openFileButton.bottom;
+                    topMargin: UM.Theme.getSize("window_margin").height;
+                    left: parent.left;
                 }
             }
 
@@ -432,25 +299,74 @@ UM.MainWindow
                     bottom: parent.bottom;
                     right: parent.right;
                 }
+                onMonitoringPrintChanged: base.monitoringPrint = monitoringPrint
+                width: UM.Theme.getSize("sidebar").width;
+            }
 
-                width: UM.Theme.sizes.sidebar.width;
+            Button
+            {
+                id: viewModeButton
 
-                manageProfilesAction: actions.manageProfiles;
+                anchors
+                {
+                    top: toolbar.bottom;
+                    topMargin: UM.Theme.getSize("window_margin").height;
+                    left: parent.left;
+                }
+                text: catalog.i18nc("@action:button","View Mode");
+                iconSource: UM.Theme.getIcon("viewmode");
+
+                style: UM.Theme.styles.tool_button;
+                tooltip: '';
+                menu: ViewMenu { }
             }
 
             Rectangle
             {
-                x: base.mouseX + UM.Theme.sizes.default_margin.width;
-                y: base.mouseY + UM.Theme.sizes.default_margin.height;
+                id: viewportOverlay
 
-                width: childrenRect.width;
-                height: childrenRect.height;
-                Label
+                color: UM.Theme.getColor("viewport_overlay")
+                anchors
                 {
-                    text: UM.ActiveTool.properties.Rotation != undefined ? "%1°".arg(UM.ActiveTool.properties.Rotation) : "";
+                    top: parent.top
+                    bottom: parent.bottom
+                    left:parent.left
+                    right: sidebar.left
                 }
+                visible: opacity > 0
+                opacity: base.monitoringPrint ? 0.75 : 0
 
-                visible: UM.ActiveTool.valid && UM.ActiveTool.properties.Rotation != undefined;
+                Behavior on opacity { NumberAnimation { duration: 100; } }
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.AllButtons
+
+                    onWheel: wheel.accepted = true
+                }
+            }
+
+            Image
+            {
+                id: cameraImage
+                width: Math.min(viewportOverlay.width, sourceSize.width)
+                height: sourceSize.height * width / sourceSize.width
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.horizontalCenterOffset: - UM.Theme.getSize("sidebar").width / 2
+                visible: base.monitoringPrint
+                source: NinjaKittens.MachineManager.printerOutputDevices.length > 0 ? NinjaKittens.MachineManager.printerOutputDevices[0].cameraImage : ""
+            }
+
+            UM.MessageStack
+            {
+                anchors
+                {
+                    horizontalCenter: parent.horizontalCenter
+                    horizontalCenterOffset: -(UM.Theme.getSize("sidebar").width/ 2)
+                    top: parent.verticalCenter;
+                    bottom: parent.bottom;
+                }
             }
         }
     }
@@ -463,102 +379,111 @@ UM.MainWindow
         {
             //; Remove & re-add the general page as we want to use our own instead of uranium standard.
             removePage(0);
-            insertPage(0, catalog.i18nc("@title:tab","General"), generalPage);
+            insertPage(0, catalog.i18nc("@title:tab","General"), Qt.resolvedUrl("Preferences/GeneralPage.qml"));
 
-            //: View preferences page title
-            insertPage(1, catalog.i18nc("@title:tab","View"), viewPage);
+            removePage(1);
+            insertPage(1, catalog.i18nc("@title:tab","Settings"), Qt.resolvedUrl("Preferences/SettingVisibilityPage.qml"));
+
+            insertPage(2, catalog.i18nc("@title:tab", "Printers"), Qt.resolvedUrl("Preferences/MachinesPage.qml"));
+
+            insertPage(3, catalog.i18nc("@title:tab", "Materials"), Qt.resolvedUrl("Preferences/MaterialsPage.qml"));
+
+            insertPage(4, catalog.i18nc("@title:tab", "Profiles"), Qt.resolvedUrl("Preferences/ProfilesPage.qml"));
 
             //Force refresh
-            setPage(0)
+            setPage(0);
         }
 
-        Item {
-            visible: false
-            GeneralPage
+        onVisibleChanged:
+        {
+            if(!visible)
             {
-                id: generalPage
-            }
-
-            ViewPage
-            {
-                id: viewPage
+                // When the dialog closes, switch to the General page.
+                // This prevents us from having a heavy page like Setting Visiblity active in the background.
+                setPage(0);
             }
         }
     }
 
-    Actions
+    Connections
     {
-        id: actions;
+        target: NinjaKittens.Actions.preferences
+        onTriggered: preferences.visible = true
+    }
 
-        open.onTriggered: openDialog.open();
-
-        quit.onTriggered: base.visible = false;
-
-        undo.onTriggered: UM.OperationStack.undo();
-        undo.enabled: UM.OperationStack.canUndo;
-        redo.onTriggered: UM.OperationStack.redo();
-        redo.enabled: UM.OperationStack.canRedo;
-
-        deleteSelection.onTriggered:
+    Connections
+    {
+        target: NinjaKittens.Actions.addProfile
+        onTriggered:
         {
-            if(objectContextMenu.objectId != 0)
-            {
-                App.deleteObject(objectContextMenu.objectId);
-            }
-        }
+            NinjaKittens.ContainerManager.createQualityChanges();
+            preferences.setPage(4);
+            preferences.show();
 
-        deleteObject.onTriggered:
-        {
-            if(objectContextMenu.objectId != 0)
-            {
-                App.deleteObject(objectContextMenu.objectId);
-                objectContextMenu.objectId = 0;
-            }
+            // Show the renameDialog after a very short delay so the preference page has time to initiate
+            showProfileNameDialogTimer.start();
         }
+    }
 
-        multiplyObject.onTriggered:
+    Connections
+    {
+        target: NinjaKittens.Actions.configureMachines
+        onTriggered:
         {
-            if(objectContextMenu.objectId != 0)
-            {
-                App.multiplyObject(objectContextMenu.objectId, 1);
-                objectContextMenu.objectId = 0;
-            }
+            preferences.visible = true;
+            preferences.setPage(2);
         }
+    }
 
-        centerObject.onTriggered:
+    Connections
+    {
+        target: NinjaKittens.Actions.manageProfiles
+        onTriggered:
         {
-            if(objectContextMenu.objectId != 0)
-            {
-                App.centerObject(objectContextMenu.objectId);
-                objectContextMenu.objectId = 0;
-            }
+            preferences.visible = true;
+            preferences.setPage(4);
         }
-        
-        groupObjects.onTriggered:
-        {
-            App.groupSelected()
-        }
-        
-        unGroupObjects.onTriggered:
-        {
-            App.ungroupSelected()
-        }
-        
-        mergeObjects.onTriggered:
-        {
-            App.mergeSelected()
-        }
+    }
 
-        deleteAll.onTriggered: App.deleteAll()
-        resetAllTranslation.onTriggered: App.resetAllTranslation()
-        resetAll.onTriggered: App.resetAll()
+    Connections
+    {
+        target: NinjaKittens.Actions.manageMaterials
+        onTriggered:
+        {
+            preferences.visible = true;
+            preferences.setPage(3)
+        }
+    }
 
-        preferences.onTriggered: { preferences.visible = true; preferences.setPage(0); }
-        manageProfiles.onTriggered: { preferences.visible = true; preferences.setPage(4); }
+    Connections
+    {
+        target: NinjaKittens.Actions.configureSettingVisibility
+        onTriggered:
+        {
+            preferences.visible = true;
+            preferences.setPage(1);
+            preferences.getCurrentItem().scrollToSection(source.key);
+        }
+    }
 
-        showEngineLog.onTriggered: engineLog.visible = true;
-        about.onTriggered: aboutDialog.visible = true;
-        toggleFullScreen.onTriggered: base.toggleFullscreen()
+    Timer
+    {
+        id: showProfileNameDialogTimer
+        repeat: false
+        interval: 1
+
+        onTriggered: preferences.getCurrentItem().showProfileNameDialog()
+    }
+
+    // BlurSettings is a way to force the focus away from any of the setting items.
+    // We need to do this in order to keep the bindings intact.
+    Connections
+    {
+        target: NinjaKittens.MachineManager
+        onBlurSettings:
+        {
+            contentItem.focus = true
+        }
     }
 
     Menu
@@ -566,27 +491,72 @@ UM.MainWindow
         id: objectContextMenu;
 
         property variant objectId: -1;
-        MenuItem { action: actions.centerObject; }
-        MenuItem { action: actions.deleteObject; }
-        MenuItem { action: actions.multiplyObject; }
+        MenuItem { action: NinjaKittens.Actions.centerObject; }
+        MenuItem { action: NinjaKittens.Actions.deleteObject; }
+        MenuItem { action: NinjaKittens.Actions.multiplyObject; }
         MenuSeparator { }
-        MenuItem { action: actions.deleteAll; }
-        MenuItem { action: actions.resetAllTranslation; }
-        MenuItem { action: actions.resetAll; }
-        MenuItem { action: actions.groupObjects;}
-        MenuItem { action: actions.mergeObjects;}
-        MenuItem { action: actions.unGroupObjects;}
+        MenuItem { action: NinjaKittens.Actions.selectAll; }
+        MenuItem { action: NinjaKittens.Actions.deleteAll; }
+        MenuItem { action: NinjaKittens.Actions.reloadAll; }
+        MenuItem { action: NinjaKittens.Actions.resetAllTranslation; }
+        MenuItem { action: NinjaKittens.Actions.resetAll; }
+        MenuSeparator { }
+        MenuItem { action: NinjaKittens.Actions.groupObjects; }
+        MenuItem { action: NinjaKittens.Actions.mergeObjects; }
+        MenuItem { action: NinjaKittens.Actions.unGroupObjects; }
+
+        Connections
+        {
+            target: NinjaKittens.Actions.deleteObject
+            onTriggered:
+            {
+                if(objectContextMenu.objectId != 0)
+                {
+                    Printer.deleteObject(objectContextMenu.objectId);
+                    objectContextMenu.objectId = 0;
+                }
+            }
+        }
+
+        Connections
+        {
+            target: NinjaKittens.Actions.multiplyObject
+            onTriggered:
+            {
+                if(objectContextMenu.objectId != 0)
+                {
+                    Printer.multiplyObject(objectContextMenu.objectId, 1);
+                    objectContextMenu.objectId = 0;
+                }
+            }
+        }
+
+        Connections
+        {
+            target: NinjaKittens.Actions.centerObject
+            onTriggered:
+            {
+                if(objectContextMenu.objectId != 0)
+                {
+                    Printer.centerObject(objectContextMenu.objectId);
+                    objectContextMenu.objectId = 0;
+                }
+            }
+        }
     }
 
     Menu
     {
         id: contextMenu;
-        MenuItem { action: actions.deleteAll; }
-        MenuItem { action: actions.resetAllTranslation; }
-        MenuItem { action: actions.resetAll; }
-        MenuItem { action: actions.groupObjects;}
-        MenuItem { action: actions.mergeObjects;}
-        MenuItem { action: actions.unGroupObjects;}
+        MenuItem { action: NinjaKittens.Actions.selectAll; }
+        MenuItem { action: NinjaKittens.Actions.deleteAll; }
+        MenuItem { action: NinjaKittens.Actions.reloadAll; }
+        MenuItem { action: NinjaKittens.Actions.resetAllTranslation; }
+        MenuItem { action: NinjaKittens.Actions.resetAll; }
+        MenuSeparator { }
+        MenuItem { action: NinjaKittens.Actions.groupObjects; }
+        MenuItem { action: NinjaKittens.Actions.mergeObjects; }
+        MenuItem { action: NinjaKittens.Actions.unGroupObjects; }
     }
 
     Connections
@@ -605,25 +575,29 @@ UM.MainWindow
         }
     }
 
+    Connections
+    {
+        target: NinjaKittens.Actions.quit
+        onTriggered: base.visible = false;
+    }
+
+    Connections
+    {
+        target: NinjaKittens.Actions.toggleFullScreen
+        onTriggered: base.toggleFullscreen();
+    }
+
     FileDialog
     {
         id: openDialog;
 
         //: File open dialog title
-        title: catalog.i18nc("@title:window","Open File")
+        title: catalog.i18nc("@title:window","Open file")
         modality: UM.Application.platform == "linux" ? Qt.NonModal : Qt.WindowModal;
         //TODO: Support multiple file selection, workaround bug in KDE file dialog
         //selectMultiple: true
-
-        signal hasMesh(string name)
-
-        function sendMeshName(path){
-            var fileName = path.slice(path.lastIndexOf("/") + 1)
-            var fileBase = fileName.slice(0, fileName.lastIndexOf("."))
-            openDialog.hasMesh(fileBase)
-        }
         nameFilters: UM.MeshFileHandler.supportedReadFileTypes;
-
+        folder: CuraApplication.getDefaultPath("dialog_load_path")
         onAccepted:
         {
             //Because several implementations of the file dialog only update the folder
@@ -631,14 +605,101 @@ UM.MainWindow
             var f = folder;
             folder = f;
 
+            CuraApplication.setDefaultPath("dialog_load_path", folder);
             UM.MeshFileHandler.readLocalFile(fileUrl)
-            openDialog.sendMeshName(fileUrl.toString())
+            var meshName = backgroundItem.getMeshName(fileUrl.toString())
+            backgroundItem.hasMesh(decodeURIComponent(meshName))
         }
+    }
+
+    Connections
+    {
+        target: NinjaKittens.Actions.open
+        onTriggered: openDialog.open()
     }
 
     EngineLog
     {
         id: engineLog;
+    }
+
+    Connections
+    {
+        target: NinjaKittens.Actions.showEngineLog
+        onTriggered: engineLog.visible = true;
+    }
+
+    AddMachineDialog
+    {
+        id: addMachineDialog
+        onMachineAdded:
+        {
+            machineActionsWizard.firstRun = addMachineDialog.firstRun
+            machineActionsWizard.start(id)
+        }
+    }
+
+    // Dialog to handle first run machine actions
+    UM.Wizard
+    {
+        id: machineActionsWizard;
+
+        title: catalog.i18nc("@title:window", "Add Printer")
+        property var machine;
+
+        function start(id)
+        {
+            var actions =  NinjaKittens.MachineActionManager.getFirstStartActions(id)
+            resetPages() // Remove previous pages
+
+            for (var i = 0; i < actions.length; i++)
+            {
+                actions[i].displayItem.reset()
+                machineActionsWizard.appendPage(actions[i].displayItem, catalog.i18nc("@title", actions[i].label));
+            }
+
+            //Only start if there are actions to perform.
+            if (actions.length > 0)
+            {
+                machineActionsWizard.currentPage = 0;
+                show()
+            }
+        }
+    }
+
+    MessageDialog
+    {
+        id: messageDialog
+        modality: Qt.ApplicationModal
+        onAccepted: Printer.messageBoxClosed(clickedButton)
+        onApply: Printer.messageBoxClosed(clickedButton)
+        onDiscard: Printer.messageBoxClosed(clickedButton)
+        onHelp: Printer.messageBoxClosed(clickedButton)
+        onNo: Printer.messageBoxClosed(clickedButton)
+        onRejected: Printer.messageBoxClosed(clickedButton)
+        onReset: Printer.messageBoxClosed(clickedButton)
+        onYes: Printer.messageBoxClosed(clickedButton)
+    }
+
+    Connections
+    {
+        target: Printer
+        onShowMessageBox:
+        {
+            messageDialog.title = title
+            messageDialog.text = text
+            messageDialog.informativeText = informativeText
+            messageDialog.detailedText = detailedText
+            messageDialog.standardButtons = buttons
+            messageDialog.icon = icon
+            messageDialog.visible = true
+        }
+    }
+
+    Connections
+    {
+        target: NinjaKittens.Actions.addMachine
+        onTriggered: addMachineDialog.visible = true;
     }
 
     AboutDialog
@@ -648,12 +709,18 @@ UM.MainWindow
 
     Connections
     {
-        target: App
+        target: NinjaKittens.Actions.about
+        onTriggered: aboutDialog.visible = true;
     }
 
-    Component.onCompleted:
+    Connections
     {
-        UM.Theme.load(UM.Resources.getPath(UM.Resources.Themes, "ninjakittens"))
+        target: Printer
+        onRequestAddPrinter:
+        {
+            addMachineDialog.visible = true
+            addMachineDialog.firstRun = false
+        }
     }
 
     Timer
@@ -668,6 +735,10 @@ UM.MainWindow
             {
                 base.visible = true;
                 restart();
+            }
+            else if(NinjaKittens.MachineManager.activeMachineId == null || NinjaKittens.MachineManager.activeMachineId == "")
+            {
+                addMachineDialog.open();
             }
         }
     }

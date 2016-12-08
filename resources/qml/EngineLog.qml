@@ -27,9 +27,9 @@ UM.Dialog
             interval: 1000;
             running: false;
             repeat: true;
-            onTriggered: textArea.text = App.getEngineLog();
+            onTriggered: textArea.text = Printer.getEngineLog();
         }
-        UM.I18nCatalog{id: catalog; name:"nk"}
+        UM.I18nCatalog{id: catalog; name:"cura"}
     }
 
     rightButtons: Button
@@ -43,7 +43,7 @@ UM.Dialog
     {
         if(visible)
         {
-            textArea.text = App.getEngineLog();
+            textArea.text = Printer.getEngineLog();
             updateTimer.start();
         } else
         {
